@@ -17,8 +17,7 @@ st.set_page_config(
 # ============================================
 # GOOGLE SHEET - BDL HNA LINK DYALK
 # ============================================
-G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1hDJ1A1BSYNoeSMCB0E07aP0vSv1HbqVjmaR3xzYbi74/export?format=csv&gid=0"
-
+G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90/edit?usp=sharing"
 # ============================================
 # LOAD DATA
 # ============================================
