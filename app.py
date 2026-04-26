@@ -62,18 +62,97 @@ st.markdown("---")
 # ============================================
 # TABS
 # ============================================
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "📏 MSA Gage R&R", 
-    "📊 SPC X̄-R", 
-    "📈 Capability Cpk", 
-    "📋 Pareto Defects", 
-    "🎯 FMEA RPN",
-    "🤖 AI Coach"
-])
-
-# ============================================
-# TAB 1: MSA
-# ============================================
+with tab1:
+    st.subheader("📏 MSA Type 1 + Gage R&R Study")
+    
+    msa_data = df[df['Part_ID'].str.contains('MSA', na=False)]
+    
+    if len(msa_data) > 0:
+        st.write(f"**MSA Data:** {len(msa_data)} mesures")
+        
+        # ============================================
+        # CALCUL Cg / Cgk - IATF 7.1.5.1
+        # ============================================
+        if all(col in df.columns for col in ['MSA_Ref', 'Tolerance', 'Measurement']):
+            ref = df['MSA_Ref'].iloc[0]
+            tol = df['Tolerance'].iloc[0]
+            mean_msa = msa_data['Measurement'].mean()
+            std_msa = msa_data['Measurement'].std()
+            
+            # Formulas IATF
+            cg = (0.2 * tol) / (6 * std_msa) if std_msa > 0 else 0
+            cgk = (0.1 * tol - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
+            
+            # ============================================
+            # DISPLAY METRICS
+            # ============================================
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Reference", f"{ref:.3f}")
+            with col2:
+                st.metric("Mean", f"{mean_msa:.3f}")
+            with col3:
+                st.metric("Cg", f"{cg:.2f}", delta="Pass ✅" if cg >= 1.33 else "Fail ❌")
+            with col4:
+                st.metric("Cgk", f"{cgk:.2f}", delta="Pass ✅" if cgk >= 1.33 else "Fail ❌")
+            
+            st.markdown("---")
+            
+            # ============================================
+            # GRAPHIQUE MSA
+            # ============================================
+            fig = go.Figure()
+            
+            # Mesures
+            fig.add_trace(go.Scatter(
+                y=msa_data['Measurement'],
+                mode='lines+markers',
+                name='Mesures MSA',
+                line=dict(color='#1E90FF', width=3),
+                marker=dict(size=8)
+            ))
+            
+            # Reference Line
+            fig.add_hline(y=ref, line_dash="dash", line_color="green", 
+                         annotation_text=f"Reference: {ref:.3f}")
+            
+            # Tolerance Limits
+            fig.add_hline(y=ref + tol/2, line_dash="dot", line_color="red", 
+                         annotation_text="USL")
+            fig.add_hline(y=ref - tol/2, line_dash="dot", line_color="red", 
+                         annotation_text="LSL")
+            
+            fig.update_layout(
+                title="MSA Type 1 - Run Chart",
+                xaxis_title="Mesure #",
+                yaxis_title="Valeur Mesurée",
+                height=400,
+                template="plotly_dark"
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # ============================================
+            # DIAGNOSTIC IATF
+            # ============================================
+            if cg < 1.33 or cgk < 1.33:
+                st.error("🚨 **MSA FAIL - Non-Compliant IATF 7.1.5.1**")
+                st.markdown("""
+                **Mochkil:** Variation dyal appareil ktira bzaf
+                
+                **7al Urgent:**
+                1. Calibration dyal l'appareil
+                2. Training dyal operator
+                3. Gage R&R complet
+                4. STOP production 7ta ytsla7
+                """)
+            else:
+                st.success("✅ **MSA PASS - IATF 7.1.5.1 Compliant**")
+                st.markdown("**Tafsir:** L'appareil stable, repeatable w accurate. Validé.")
+        else:
+            st.warning("⚠️ Khass `MSA_Ref` w `Tolerance` f Google Sheet")
+    else:
+        st.warning("⚠️ Ma kaynch MSA data f Sheet. Zid Part_ID = 'MSA'")
 with tab1:
     st.subheader("📏 MSA Type 1 + Gage R&R Study")
     
