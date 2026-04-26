@@ -366,69 +366,58 @@ with tab6:
 
     from openai import OpenAI
 
-try:
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-except Exception:
-    st.error("🚨 OPENAI_API_KEY ma kaynach f Streamlit Secrets")
-    st.stop()
+    try:
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    except Exception:
+        st.error("🚨 API Key مشي موجود")
+        st.stop()
 
-    defects_count = len(df[df["Defect_Type"].astype(str).str.upper() != "OK"])
-    top_defect = "None"
-
-    if defects_count > 0:
-        top_defect = df[df["Defect_Type"].astype(str).str.upper() != "OK"]["Defect_Type"].value_counts().idxmax()
-
-    out_spec = df[
-        (df["Measurement"] > usl) |
-        (df["Measurement"] < lsl)
-    ]
-
-    summary = f"""
-    Quality data summary:
-    Mean = {mean_val:.4f}
-    Std Dev = {std_val:.6f}
-    USL = {usl}
-    LSL = {lsl}
-    Cp = {cp:.2f}
-    Cpk = {cpk:.2f}
-    Defects count = {defects_count}
-    Top defect = {top_defect}
-    Out of spec points = {len(out_spec)}
-    """
-
+    # INPUT
     user_question = st.text_area(
-        "💬 Sowel AI Coach:",
-        placeholder="مثلا: علاش Cpk ضعيف؟ شنو action plan؟ كيفاش نعالج Rayure؟"
+        "💬 سول AI Coach:",
+        placeholder="مثلا: علاش Cpk ضعيف؟ شنو ندير؟"
     )
 
     if st.button("🤖 Analyse with AI"):
+
         if user_question.strip() == "":
-            st.warning("كتب شي سؤال الأول.")
+            st.warning("كتب شي سؤال")
         else:
-            with st.spinner("AI kayحلل situation..."):
-                response = client.responses.create(
-                   model="gpt-4.1-mini",
-                    input=f"""
-                    You are a senior automotive quality engineer.
-                    Answer in Moroccan Darija mixed with simple French/English.
+            with st.spinner("AI كيحلل..."):
 
-                    Use this quality data:
-                    {summary}
+                summary = f"""
+                Mean = {mean_val}
+                Std = {std_val}
+                Cp = {cp}
+                Cpk = {cpk}
+                USL = {usl}
+                LSL = {lsl}
+                """
 
-                    User question:
-                    {user_question}
+                try:
+                    response = client.responses.create(
+                        model="gpt-4.1-mini",
+                        input=f"""
+                        You are a quality engineer.
 
-                    Give:
-                    1. Interpretation
-                    2. Root cause possibilities
-                    3. Immediate containment actions
-                    4. Corrective actions
-                    5. Priority level
-                    """
-                )
+                        Data:
+                        {summary}
 
-                st.markdown(response.output_text)
+                        Question:
+                        {user_question}
 
+                        Answer with:
+                        - interpretation
+                        - root cause
+                        - actions
+                        """
+                    )
+
+                    st.success("✅ AI Response:")
+                    st.write(response.output_text)
+
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
 # =========================
 # FOOTER
 # =========================
