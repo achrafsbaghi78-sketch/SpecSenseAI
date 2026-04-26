@@ -15,9 +15,10 @@ st.set_page_config(
 )
 
 # ============================================
-# GOOGLE SHEET - BDL HNA LINK DYALK
+# GOOGLE SHEET JDID DYALK ✅
 # ============================================
-G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90/edit?usp=sharing"
+G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90/export?format=csv&gid=0"
+
 # ============================================
 # LOAD DATA
 # ============================================
@@ -28,8 +29,9 @@ def load_data():
 
 try:
     df = load_data()
-except:
-    st.error("🚨 Error: Ma 9drnach n9raw Google Sheet. Check l link.")
+except Exception as e:
+    st.error(f"🚨 Error: Ma 9drnach n9raw Google Sheet. Check l link w permission.")
+    st.error(f"Detail: {e}")
     st.stop()
 
 # ============================================
@@ -39,8 +41,13 @@ with st.sidebar:
     st.markdown("## 📊 Live KPIs")
     st.markdown("---")
     st.metric(label="📦 Total Mesures", value=len(df))
-    st.metric(label="📏 MSA Points", value=len(df[df['Part_ID'].str.contains('MSA', na=False)]))
-    st.metric(label="📈 SPC Points", value=len(df[df['Part_ID'].str.contains('SPC', na=False)]))
+    
+    if 'Part_ID' in df.columns:
+        msa_count = len(df[df['Part_ID'].str.contains('MSA', na=False)])
+        spc_count = len(df[df['Part_ID'].str.contains('SPC', na=False)])
+        st.metric(label="📏 MSA Points", value=msa_count)
+        st.metric(label="📈 SPC Points", value=spc_count)
+    
     st.markdown("---")
     st.markdown(f"🕐 **Last Update** \n{datetime.now().strftime('%H:%M:%S')}")
     st.markdown("---")
@@ -53,7 +60,7 @@ st.title("🎯 SpecSense AI - Quality 4.0 Suite")
 st.markdown("---")
 
 # ============================================
-# TABS ORIGINAL
+# TABS
 # ============================================
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📏 MSA Gage R&R", 
@@ -70,29 +77,30 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 with tab1:
     st.subheader("📏 MSA Type 1 + Gage R&R Study")
     
-    msa_data = df[df['Part_ID'].str.contains('MSA', na=False)]
-    
-    if len(msa_data) > 0:
-        # HNA CODE MSA DYALK LI KAN KHDDAM
-        st.write("MSA Data:", len(msa_data), "mesures")
+    if 'Part_ID' in df.columns:
+        msa_data = df[df['Part_ID'].str.contains('MSA', na=False)]
         
-        # Example: Cg Cgk
-        if 'MSA_Ref' in df.columns and 'Tolerance' in df.columns:
-            ref = df['MSA_Ref'].iloc[0]
-            tol = df['Tolerance'].iloc[0]
-            mean_msa = msa_data['Measurement'].mean()
-            std_msa = msa_data['Measurement'].std()
+        if len(msa_data) > 0:
+            st.write("MSA Data:", len(msa_data), "mesures")
             
-            cg = (0.2 * tol) / (6 * std_msa) if std_msa > 0 else 0
-            cgk = (0.1 * tol - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Cg", f"{cg:.2f}", delta="Pass ✅" if cg >= 1.33 else "Fail ❌")
-            with col2:
-                st.metric("Cgk", f"{cgk:.2f}", delta="Pass ✅" if cgk >= 1.33 else "Fail ❌")
+            if 'MSA_Ref' in df.columns and 'Tolerance' in df.columns:
+                ref = df['MSA_Ref'].iloc[0]
+                tol = df['Tolerance'].iloc[0]
+                mean_msa = msa_data['Measurement'].mean()
+                std_msa = msa_data['Measurement'].std()
+                
+                cg = (0.2 * tol) / (6 * std_msa) if std_msa > 0 else 0
+                cgk = (0.1 * tol - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Cg", f"{cg:.2f}", delta="Pass ✅" if cg >= 1.33 else "Fail ❌")
+                with col2:
+                    st.metric("Cgk", f"{cgk:.2f}", delta="Pass ✅" if cgk >= 1.33 else "Fail ❌")
+        else:
+            st.warning("⚠️ Ma kaynch MSA data f Sheet")
     else:
-        st.warning("⚠️ Ma kaynch MSA data f Sheet")
+        st.warning("⚠️ Column 'Part_ID' ma kaynach f Sheet")
 
 # ============================================
 # TAB 2: SPC
@@ -100,14 +108,14 @@ with tab1:
 with tab2:
     st.subheader("📊 SPC X̄-R Control Chart")
     
-    spc_data = df[df['Part_ID'].str.contains('SPC', na=False)]
-    
-    if len(spc_data) > 0:
-        st.write("SPC Data:", len(spc_data), "points")
-        # HNA ZID CODE SPC DYALK
-        st.line_chart(spc_data['Measurement'])
-    else:
-        st.info("📊 SPC - Mazal ma kaynch data SPC f Sheet")
+    if 'Part_ID' in df.columns:
+        spc_data = df[df['Part_ID'].str.contains('SPC', na=False)]
+        
+        if len(spc_data) > 0:
+            st.write("SPC Data:", len(spc_data), "points")
+            st.line_chart(spc_data['Measurement'])
+        else:
+            st.info("📊 SPC - Mazal ma kaynch data SPC f Sheet")
 
 # ============================================
 # TAB 3: CPK
@@ -115,7 +123,7 @@ with tab2:
 with tab3:
     st.subheader("📈 Process Capability - Cpk/Ppk")
     
-    if 'USL' in df.columns and 'LSL' in df.columns:
+    if 'USL' in df.columns and 'LSL' in df.columns and 'Measurement' in df.columns:
         usl = df['USL'].iloc[0]
         lsl = df['LSL'].iloc[0]
         mean = df['Measurement'].mean()
@@ -133,7 +141,7 @@ with tab3:
             sigma = (cpk * 3) if cpk > 0 else 0
             st.metric("Sigma Level", f"{sigma:.1f}σ")
     else:
-        st.warning("⚠️ Khass USL w LSL f Google Sheet")
+        st.warning("⚠️ Khass USL, LSL, Measurement f Google Sheet")
 
 # ============================================
 # TAB 4: PARETO
@@ -150,7 +158,7 @@ with tab5:
     st.info("🚧 FMEA - Mazal khassna n3mroha")
 
 # ============================================
-# TAB 6: AI COACH
+# TAB 6: AI COACH - FIXED
 # ============================================
 with tab6:
     st.subheader("🤖 SpecSense AI Coach - Decision Maker")
@@ -159,4 +167,23 @@ with tab6:
     col1, col2 = st.columns([1,2])
     
     with col1:
-       kpi_type = st.selectbox("Chno KPI?", ["Cpk", "Cp", "Ppk", "Cg", "Cgk", "RPN"])
+        kpi_type = st.selectbox("Chno KPI?", ["Cpk", "Cp", "Ppk", "Cg", "Cgk", "RPN"])
+        kpi_value = st.number_input("Dkhl Value", value=1.0, step=0.01, format="%.2f")
+        
+        if st.button("🚀 Analyse Liya", use_container_width=True):
+            st.session_state.analyze = True
+    
+    with col2:
+        if 'analyze' in st.session_state:
+            st.markdown("### 📋 Diagnostic + Action Plan")
+            
+            if kpi_type == "Cpk":
+                if kpi_value >= 1.67:
+                    st.success("✅ **Excellent - World Class**")
+                    st.markdown("**Tafsir:** Process capable bzaf. 6 Sigma level.")
+                elif kpi_value >= 1.33:
+                    st.success("✅ **Good - IATF Compliant**")
+                    st.markdown("**Tafsir:** Process capable. Conforme IATF 16949.")
+                elif kpi_value >= 1.00:
+                    st.warning("⚠️ **Marginal - Risk**")
+                    st.markdown("**7al:** 1) 100% Sort 2) 8D Analysis 3) Process improvement")
