@@ -359,10 +359,10 @@ with tab5:
         st.warning("Columns Severity / Occurrence / Detection khasin.")
 
 # =========================
-# TAB 6: AI COACH WITH OPENAI
+# TAB 6: CHATGPT AI COACH
 # =========================
 with tab6:
-    st.subheader("🤖 AI Quality Coach")
+    st.subheader("🤖 AI Quality Chat")
 
     from openai import OpenAI
 
@@ -372,49 +372,65 @@ with tab6:
         st.error("🚨 API Key مشي موجود")
         st.stop()
 
-    # INPUT
-    user_question = st.text_area(
-        "💬 سول AI Coach:",
-        placeholder="مثلا: علاش Cpk ضعيف؟ شنو ندير؟"
-    )
+    # 💾 حفظ conversation
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-    if st.button("🤖 Analyse with AI"):
+    # عرض الرسائل
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-        if user_question.strip() == "":
-            st.warning("كتب شي سؤال")
-        else:
-            with st.spinner("AI كيحلل..."):
+    # user input
+    prompt = st.chat_input("💬 سول AI... (مثلا: علاش Cpk ضعيف؟)")
 
-                summary = f"""
-                Mean = {mean_val}
-                Std = {std_val}
-                Cp = {cp}
-                Cpk = {cpk}
-                USL = {usl}
-                LSL = {lsl}
-                """
+    if prompt:
+        # عرض سؤال user
+        st.chat_message("user").markdown(prompt)
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        # تجهيز summary ديال data
+        summary = f"""
+        Mean = {mean_val}
+        Std Dev = {std_val}
+        Cp = {cp}
+        Cpk = {cpk}
+        USL = {usl}
+        LSL = {lsl}
+        """
+
+        with st.chat_message("assistant"):
+            with st.spinner("AI كيجاوب..."):
 
                 try:
                     response = client.responses.create(
                         model="gpt-4.1-mini",
-                        input=f"""
-                        You are a quality engineer.
+                        input=[
+                            {
+                                "role": "system",
+                                "content": "You are a senior quality engineer. Answer in Darija + simple French/English."
+                            },
+                            {
+                                "role": "user",
+                                "content": f"""
+                                Data:
+                                {summary}
 
-                        Data:
-                        {summary}
-
-                        Question:
-                        {user_question}
-
-                        Answer with:
-                        - interpretation
-                        - root cause
-                        - actions
-                        """
+                                Question:
+                                {prompt}
+                                """
+                            }
+                        ]
                     )
 
-                    st.success("✅ AI Response:")
-                    st.write(response.output_text)
+                    reply = response.output_text
+
+                    st.markdown(reply)
+
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": reply
+                    })
 
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
