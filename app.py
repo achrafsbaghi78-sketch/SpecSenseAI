@@ -10,6 +10,7 @@ from datetime import datetime
 st.set_page_config(page_title="SpecSense AI", page_icon="🎯", layout="wide")
 
 # BDL HNA B LINK DYAL GOOGLE SHEET DYALK
+# MOHIM: Khass ykoun f lakher: /export?format=csv&gid=0
 G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/export?format=csv&gid=0"
 
 # ============================================
@@ -23,6 +24,7 @@ def load_data():
         return df
     except Exception as e:
         st.error(f"⚠️ Error loading Google Sheet: {e}")
+        st.info("Vérifier: 1) Link fih /export?format=csv 2) Sheet shared 'Anyone with link'")
         return pd.DataFrame()
 
 df = load_data()
@@ -44,6 +46,7 @@ st.sidebar.header("📊 KPIs Live")
 st.sidebar.metric("Total Mesures", len(df))
 st.sidebar.metric("MSA Points", len(df[df['Part_ID'].str.contains('MSA', na=False)]))
 st.sidebar.metric("SPC Points", len(df[df['Part_ID'].str.contains('SPC', na=False)]))
+st.sidebar.metric("Last Update", datetime.now().strftime('%H:%M:%S'))
 
 # ============================================
 # TABS
@@ -58,14 +61,16 @@ with tab1:
         usl = msa_df['USL'].iloc[0]
         lsl = msa_df['LSL'].iloc[0]
         ref = (usl + lsl) / 2
-        cg = (0.2 * (usl - lsl)) / (6 * msa_df['Measurement'].std())
-        cgk = min((usl - msa_df['Measurement'].mean()) / (3 * msa_df['Measurement'].std()),
-                  (msa_df['Measurement'].mean() - lsl) / (3 * msa_df['Measurement'].std()))
+        std = msa_df['Measurement'].std()
+        mean = msa_df['Measurement'].mean()
+        
+        cg = (0.2 * (usl - lsl)) / (6 * std) if std > 0 else 0
+        cgk = min((usl - mean) / (3 * std), (mean - lsl) / (3 * std)) if std > 0 else 0
         
         col1, col2, col3 = st.columns(3)
         col1.metric("Cg", f"{cg:.2f}", "✅ Pass" if cg >= 1.33 else "❌ Fail")
         col2.metric("Cgk", f"{cgk:.2f}", "✅ Pass" if cgk >= 1.33 else "❌ Fail")
-        col3.metric("Bias", f"{msa_df['Measurement'].mean() - ref:.4f}")
+        col3.metric("Bias", f"{mean - ref:.4f}")
         
         fig = px.histogram(msa_df, x='Measurement', nbins=20, title="MSA Distribution")
         fig.add_vline(x=ref, line_dash="dash", line_color="green", annotation_text="Reference")
@@ -73,7 +78,7 @@ with tab1:
         fig.add_vline(x=lsl, line_dash="dash", line_color="red", annotation_text="LSL")
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.info("Makaynch MSA data f Sheet")
+        st.info("Makaynch MSA data f Sheet. Zid rows fihom Part_ID = 'MSA_001'")
 
 # TAB 2: SPC
 with tab2:
@@ -83,14 +88,114 @@ with tab2:
         spc_df['Subgroup'] = spc_df.index // 5
         xbar = spc_df.groupby('Subgroup')['Measurement'].mean().reset_index()
         r_chart = spc_df.groupby('Subgroup')['Measurement'].agg(lambda x: x.max() - x.min()).reset_index()
+        xbar['Range'] = r_chart['Measurement']
         
         xbar_mean = xbar['Measurement'].mean()
-        r_mean = r_chart['Measurement'].mean()
-        A2 = 0.577 # n=5
+        r_mean = xbar['Range'].mean()
+        A2 = 0.577
+        D4 = 2.114
+        D3 = 0
+        
         UCL_X = xbar_mean + A2 * r_mean
         LCL_X = xbar_mean - A2 * r_mean
+        UCL_R = D4 * r_mean
+        LCL_R = D3 * r_mean
         
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=xbar['Subgroup'], y=xbar['Measurement'], mode='lines+markers', name='X̄'))
-        fig.add_hline(y=UCL_X, line_dash="dash", line_color="red", annotation_text="UCL")
-       fig.add_hline(y=xbar_mean, line_color="green", annotation_text="CL")
+        col1, col2 = st.columns(2)
+        with col1:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=xbar['Subgroup'], y=xbar['Measurement'], mode='lines+markers', name='X̄'))
+            fig.add_hline(y=UCL_X, line_dash="dash", line_color="red", annotation_text="UCL")
+            fig.add_hline(y=xbar_mean, line_color="green", annotation_text="CL")
+            fig.add_hline(y=LCL_X, line_dash="dash", line_color="red", annotation_text="LCL")
+            fig.update_layout(title="X̄ Chart", height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            fig2 = go.Figure()
+            fig2.add_trace(go.Scatter(x=xbar['Subgroup'], y=xbar['Range'], mode='lines+markers', name='R'))
+            fig2.add_hline(y=UCL_R, line_dash="dash", line_color="red", annotation_text="UCL")
+            fig2.add_hline(y=r_mean, line_color="green", annotation_text="CL")
+            fig2.update_layout(title="R Chart", height=400)
+            st.plotly_chart(fig2, use_container_width=True)
+        
+        violations = xbar[(xbar['Measurement'] > UCL_X) | (xbar['Measurement'] < LCL_X)]
+        if not violations.empty:
+            st.error(f"🚨 {len(violations)} Out-of-Control Points Detected!")
+        else:
+            st.success("✅ Process In Control")
+    else:
+        st.info("Khass 5 points SPC 3la a9al. Zid rows fihom Part_ID = 'SPC_001'")
+
+# TAB 3: CAPABILITY
+with tab3:
+    st.subheader("📈 Process Capability - Cpk/Ppk")
+    spc_df = df[df['Part_ID'].str.contains('SPC', na=False)]
+    if not spc_df.empty:
+        usl = spc_df['USL'].iloc[0]
+        lsl = spc_df['LSL'].iloc[0]
+        mean = spc_df['Measurement'].mean()
+        std = spc_df['Measurement'].std()
+        
+        if std > 0:
+            cp = (usl - lsl) / (6 * std)
+            cpk = min((usl - mean) / (3 * std), (mean - lsl) / (3 * std))
+            
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Cp", f"{cp:.2f}", "✅ Capable" if cp >= 1.33 else "⚠️ Not Capable")
+            col2.metric("Cpk", f"{cpk:.2f}", "✅ Capable" if cpk >= 1.33 else "⚠️ Not Capable")
+            col3.metric("Sigma Level", f"{3*cpk:.1f}σ")
+            
+            fig = px.histogram(spc_df, x='Measurement', nbins=30, marginal="box", title="Process Distribution vs Specs")
+            fig.add_vline(x=usl, line_dash="dash", line_color="red", annotation_text="USL")
+            fig.add_vline(x=lsl, line_dash="dash", line_color="red", annotation_text="LSL")
+            fig.add_vline(x=mean, line_color="green", annotation_text="Mean")
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Std = 0. Vérifier data")
+    else:
+        st.info("Makaynch SPC data")
+
+# TAB 4: PARETO
+with tab4:
+    st.subheader("📋 Pareto Analysis - 80/20 Rule")
+    if 'Defect_Type' in df.columns and not df['Defect_Type'].isna().all():
+        pareto = df['Defect_Type'].value_counts().reset_index()
+        pareto.columns = ['Defect', 'Count']
+        pareto['Cum%'] = 100 * pareto['Count'].cumsum() / pareto['Count'].sum()
+        
+        fig = px.bar(pareto, x='Defect', y='Count', title="Pareto Chart - Vital Few")
+        fig.add_scatter(x=pareto['Defect'], y=pareto['Cum%'], mode='lines+markers', name='Cum %', yaxis='y2')
+        fig.update_layout(yaxis2=dict(overlaying='y', side='right', range=[0,100], title='Cumulative %'))
+        st.plotly_chart(fig, use_container_width=True)
+        
+        vital_few = pareto[pareto['Cum%'] <= 80]
+        st.info(f"🎯 Vital Few: {', '.join(vital_few['Defect'].tolist())} = 80% dyal defects")
+    else:
+        st.info("Makaynch Defect_Type data f Sheet")
+
+# TAB 5: FMEA
+with tab5:
+    st.subheader("🎯 FMEA Risk Analysis - RPN")
+    if all(col in df.columns for col in ['Severity', 'Occurrence', 'Detection', 'Defect_Type']):
+        fmea = df[['Defect_Type', 'Severity', 'Occurrence', 'Detection']].dropna()
+        fmea['RPN'] = fmea['Severity'] * fmea['Occurrence'] * fmea['Detection']
+        fmea = fmea.sort_values('RPN', ascending=False)
+        
+        def risk_level(rpn):
+            if rpn >= 100: return "🔴 High"
+            elif rpn >= 50: return "🟠 Medium"
+            else: return "🟢 Low"
+        
+        fmea['Risk'] = fmea['RPN'].apply(risk_level)
+        st.dataframe(fmea, use_container_width=True, hide_index=True)
+        
+        fig = px.bar(fmea.head(10), x='Defect_Type', y='RPN', color='Risk', 
+                     color_discrete_map={"🔴 High":"red", "🟠 Medium":"orange", "🟢 Low":"green"},
+                     title="Top 10 Risks by RPN")
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("Khass Severity, Occurrence, Detection, Defect_Type f Sheet")
+
+st.markdown("---")
+st.caption(f"SpecSense AI v1.0 | IATF 16949:2016 Compliant | Last Update: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
