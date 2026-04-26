@@ -8,7 +8,97 @@ from datetime import datetime
 # CONFIG + GOOGLE SHEET LINK
 # ============================================
 st.set_page_config(page_title="SpecSense AI", page_icon="🎯", layout="wide")
+# ============================================
+# PROFESSIONAL LIGHT THEME - SPECSENSE V2.0
+# ============================================
+st.set_page_config(
+    page_title="SpecSense AI", 
+    page_icon="🎯", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
+# Custom CSS - Blanc + Bleu Pro
+st.markdown("""
+<style>
+    /* Main App Background */
+    .stApp {
+        background-color: #F8F9FA;
+    }
+    
+    /* Sidebar - Bleu Foncé Pro */
+    [data-testid="stSidebar"] {
+        background-color: #1E3A5F;
+    }
+    
+    /* Sidebar Text - Blanc */
+    [data-testid="stSidebar"] * {
+        color: #FFFFFF !important;
+    }
+    
+    /* Metrics Cards */
+    [data-testid="stMetricValue"] {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1E3A5F;
+    }
+    
+    /* Headers */
+    h1, h2, h3 {
+        color: #1E3A5F !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Tabs - Modern */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #FFFFFF;
+        padding: 10px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        background-color: #E9ECEF;
+        border-radius: 8px;
+        color: #1E3A5F;
+        font-weight: 600;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #1E3A5F;
+        color: white !important;
+    }
+    
+    /* Buttons */
+    .stButton>button {
+        background-color: #1E3A5F;
+        color: white;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        padding: 10px 24px;
+    }
+    
+    .stButton>button:hover {
+        background-color: #2C5282;
+    }
+    
+    /* Dataframe */
+    .dataframe {
+        border: none !important;
+        border-radius: 8px;
+    }
+    
+    /* Success/Error/Warning Boxes */
+    .stAlert {
+        border-radius: 8px;
+        border-left: 5px solid;
+    }
+    
+</style>
+""", unsafe_allow_html=True)
 # BDL HNA B LINK DYAL GOOGLE SHEET DYALK
 # MOHIM: Khass ykoun f lakher: /export?format=csv&gid=0
 G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90/export?format=csv&gid=0"
