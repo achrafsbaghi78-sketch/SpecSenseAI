@@ -11,7 +11,7 @@ st.set_page_config(page_title="SpecSense AI", page_icon="🎯", layout="wide")
 
 # BDL HNA B LINK DYAL GOOGLE SHEET DYALK
 # MOHIM: Khass ykoun f lakher: /export?format=csv&gid=0
-G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/export?format=csv&gid=0"
+G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90/export?format=csv&gid=0"
 
 # ============================================
 # LOAD DATA
