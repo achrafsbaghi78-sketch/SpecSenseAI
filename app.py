@@ -93,4 +93,4 @@ with tab2:
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=xbar['Subgroup'], y=xbar['Measurement'], mode='lines+markers', name='X̄'))
         fig.add_hline(y=UCL_X, line_dash="dash", line_color="red", annotation_text="UCL")
-        fig.add_hline(y=xbar_mean, line_color="green", annotation_text="CL
+       fig.add_hline(y=xbar_mean, line_color="green", annotation_text="CL")
