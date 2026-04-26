@@ -359,72 +359,108 @@ with tab5:
         st.warning("Columns Severity / Occurrence / Detection khasin.")
 
 # =========================
-# TAB 6: CHATGPT AI COACH
+# TAB 6: ADVANCED CHATGPT AI COACH
 # =========================
 with tab6:
-    st.subheader("🤖 AI Quality Chat")
+    st.subheader("🤖 Advanced AI Quality Chat")
 
     from openai import OpenAI
 
     try:
         client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
     except Exception:
-        st.error("🚨 API Key مشي موجود")
+        st.error("🚨 OPENAI_API_KEY ma kaynach f Streamlit Secrets")
         st.stop()
 
-    # 💾 حفظ conversation
+    if st.button("🧹 Reset Chat"):
+        st.session_state.messages = []
+
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # عرض الرسائل
+    defects_df = df[df["Defect_Type"].astype(str).str.upper() != "OK"]
+    out_spec_df = df[(df["Measurement"] > usl) | (df["Measurement"] < lsl)]
+
+    top_defects = (
+        defects_df["Defect_Type"]
+        .value_counts()
+        .head(5)
+        .to_dict()
+        if len(defects_df) > 0 else {}
+    )
+
+    data_sample = df.head(20).to_csv(index=False)
+
+    quality_context = f"""
+PROJECT: SpecSense AI - Quality 4.0 Suite
+
+GLOBAL KPIs:
+- Total measurements: {len(df)}
+- Mean: {mean_val:.4f}
+- Std Dev: {std_val:.6f}
+- USL: {usl}
+- LSL: {lsl}
+- Cp: {cp:.2f}
+- Cpk: {cpk:.2f}
+
+DEFECTS:
+- Defects count: {len(defects_df)}
+- Top defects: {top_defects}
+
+OUT OF SPEC:
+- Out of spec count: {len(out_spec_df)}
+
+DATA SAMPLE CSV:
+{data_sample}
+"""
+
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # user input
-    prompt = st.chat_input("💬 سول AI... (مثلا: علاش Cpk ضعيف؟)")
+    prompt = st.chat_input("💬 سول AI Quality Coach...")
 
     if prompt:
-        # عرض سؤال user
-        st.chat_message("user").markdown(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
 
-        # تجهيز summary ديال data
-        summary = f"""
-        Mean = {mean_val}
-        Std Dev = {std_val}
-        Cp = {cp}
-        Cpk = {cpk}
-        USL = {usl}
-        LSL = {lsl}
-        """
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        messages_for_ai = [
+            {
+                "role": "system",
+                "content": """
+You are an expert senior automotive quality engineer.
+You specialize in IATF 16949, SPC, MSA, Cp/Cpk, Pareto, FMEA, 8D, QRQC, 5 Why, Ishikawa.
+
+Answer in Moroccan Darija mixed with simple French/English.
+
+Rules:
+- Be practical, not theoretical.
+- Always explain the situation using the provided data.
+- Give clear actions.
+- If risk is high, say STOP production / containment.
+- Use bullet points.
+- Give priority: Low / Medium / High / Critical.
+"""
+            },
+            {
+                "role": "user",
+                "content": quality_context
+            }
+        ]
+
+        messages_for_ai += st.session_state.messages[-10:]
 
         with st.chat_message("assistant"):
-            with st.spinner("AI كيجاوب..."):
-
+            with st.spinner("AI kayحلل data..."):
                 try:
                     response = client.responses.create(
                         model="gpt-4.1-mini",
-                        input=[
-                            {
-                                "role": "system",
-                                "content": "You are a senior quality engineer. Answer in Darija + simple French/English."
-                            },
-                            {
-                                "role": "user",
-                                "content": f"""
-                                Data:
-                                {summary}
-
-                                Question:
-                                {prompt}
-                                """
-                            }
-                        ]
+                        input=messages_for_ai
                     )
 
                     reply = response.output_text
-
                     st.markdown(reply)
 
                     st.session_state.messages.append({
@@ -433,7 +469,7 @@ with tab6:
                     })
 
                 except Exception as e:
-                    st.error(f"❌ Error: {e}")
+                    st.error(f"❌ AI Error: {e}")
 # =========================
 # FOOTER
 # =========================
