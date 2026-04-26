@@ -364,31 +364,90 @@ with tab5:
 with tab6:
     st.subheader("🤖 AI Quality Coach")
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-
-    st.write("### تحليل سريع:")
-
-    if cpk < 1.00:
-        st.error("🔴 Process not capable. Khass action urgent.")
-        st.write("- Check machine calibration")
-        st.write("- Check tool wear")
-        st.write("- Review operator method")
-    elif cpk < 1.33:
-        st.warning("🟡 Process قريب من risk. خاص improvement.")
-        st.write("- Reduce variation")
-        st.write("- Increase sampling")
-        st.write("- Monitor SPC daily")
-    else:
-        st.success("🟢 Process capable. Continue monitoring.")
-
     defects_count = len(df[df["Defect_Type"].astype(str).str.upper() != "OK"])
+
+    top_defect = "None"
     if defects_count > 0:
         top_defect = df[df["Defect_Type"].astype(str).str.upper() != "OK"]["Defect_Type"].value_counts().idxmax()
-        st.write(f"📌 Top defect: **{top_defect}**")
-    else:
-        st.write("✅ No major defects detected.")
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    out_spec = df[
+        (df["Measurement"] > usl) |
+        (df["Measurement"] < lsl)
+    ]
+
+    def ai_interpretation(question=""):
+        response = []
+
+        response.append("### 🧠 Interpretation")
+        response.append(f"- Mean = **{mean_val:.4f}**")
+        response.append(f"- Std Dev = **{std_val:.6f}**")
+        response.append(f"- Cp = **{cp:.2f}**")
+        response.append(f"- Cpk = **{cpk:.2f}**")
+        response.append(f"- Defects count = **{defects_count}**")
+        response.append(f"- Top defect = **{top_defect}**")
+        response.append(f"- Out of spec points = **{len(out_spec)}**")
+
+        response.append("### 🎯 Decision")
+
+        if cpk < 1.00:
+            response.append("🔴 **Process not capable. Risk high.**")
+        elif cpk < 1.33:
+            response.append("🟡 **Process borderline. Needs improvement.**")
+        else:
+            response.append("🟢 **Process capable. Continue monitoring.**")
+
+        response.append("### ✅ Recommended Actions")
+
+        if cpk < 1.33:
+            response.append("- Check machine calibration")
+            response.append("- Check tool wear")
+            response.append("- Reduce variation")
+            response.append("- Increase SPC monitoring")
+            response.append("- Verify measurement system MSA")
+
+        if len(out_spec) > 0:
+            response.append("- Isolate out-of-spec parts")
+            response.append("- Check last machine settings")
+            response.append("- Open corrective action 8D / QRQC")
+
+        if defects_count > 0:
+            response.append(f"- Focus first on defect: **{top_defect}**")
+            response.append("- Use Pareto principle: fix biggest defect first")
+            response.append("- Check root cause using 5 Why / Ishikawa")
+
+        if "msa" in question.lower():
+            response.append("### 📏 MSA Advice")
+            response.append("- Check repeatability between trials")
+            response.append("- Check reproducibility between operators")
+            response.append("- If Cg/Cgk < 1.33, measurement system is not acceptable")
+
+        if "spc" in question.lower():
+            response.append("### 📊 SPC Advice")
+            response.append("- Check points outside UCL/LCL")
+            response.append("- Look for trends or sudden shifts")
+            response.append("- If unstable, stop and investigate before production continues")
+
+        if "cpk" in question.lower():
+            response.append("### 📈 Cpk Advice")
+            response.append("- Cpk < 1.00 = bad capability")
+            response.append("- Cpk 1.00 to 1.33 = weak / needs improvement")
+            response.append("- Cpk > 1.33 = acceptable")
+
+        return "\n".join(response)
+
+    st.markdown("### 💬 Sowel AI Coach")
+
+    user_question = st.text_input(
+        "كتب السؤال ديالك هنا:",
+        placeholder="مثلا: علاش Cpk ضعيف؟ شنو خاصني ندير؟"
+    )
+
+    if st.button("🤖 Analyse Situation"):
+        st.markdown(ai_interpretation(user_question))
+
+    st.markdown("---")
+    st.markdown("### ⚡ Auto Diagnosis")
+    st.markdown(ai_interpretation())
 
 # =========================
 # FOOTER
