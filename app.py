@@ -365,29 +365,33 @@ response = ollama.chat(
     messages=messages_for_ai
 )
 # =========================
-# TAB 6: HUGGING FACE FREE AI COACH
+# TAB 6: FREE AI (HUGGING FACE)
 # =========================
 with tab6:
-    st.subheader("🤖 Hugging Face AI Quality Chat")
+    st.subheader("🤖 Free AI Quality Chat")
 
     from huggingface_hub import InferenceClient
 
     try:
         client = InferenceClient(token=st.secrets["HF_TOKEN"])
-    except Exception:
-        st.error("🚨 HF_TOKEN ma kaynach f Streamlit Secrets")
+    except:
+        st.error("🚨 HF_TOKEN ma kaynach")
         st.stop()
 
+    # حفظ chat
     if "hf_messages" not in st.session_state:
         st.session_state.hf_messages = []
 
+    # reset
     if st.button("🧹 Reset Chat"):
         st.session_state.hf_messages = []
 
+    # عرض history
     for msg in st.session_state.hf_messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
+    # input
     prompt = st.chat_input("💬 سول AI Quality Coach...")
 
     if prompt:
@@ -396,8 +400,11 @@ with tab6:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        quality_context = f"""
-Quality data:
+        # context
+        context = f"""
+You are a senior automotive quality engineer.
+
+Data:
 Mean = {mean_val:.4f}
 Std Dev = {std_val:.6f}
 Cp = {cp:.2f}
@@ -405,28 +412,25 @@ Cpk = {cpk:.2f}
 USL = {usl}
 LSL = {lsl}
 
-User question:
-{prompt}
+Give:
+- Interpretation
+- Root cause
+- Actions
+- Priority
 """
 
-        messages_for_ai = [
-            {
-                "role": "system",
-                "content": "You are a senior automotive quality engineer. Answer in Moroccan Darija mixed with simple French/English. Give interpretation, root causes, containment actions, corrective actions, and priority."
-            },
-            {
-                "role": "user",
-                "content": quality_context
-            }
+        messages = [
+            {"role": "system", "content": context},
+            {"role": "user", "content": prompt}
         ]
 
         with st.chat_message("assistant"):
-            with st.spinner("HF AI kayحلل..."):
+            with st.spinner("AI kayفكر..."):
                 try:
                     response = client.chat.completions.create(
                         model="mistralai/Mistral-7B-Instruct-v0.3",
-                        messages=messages_for_ai,
-                        max_tokens=600,
+                        messages=messages,
+                        max_tokens=500,
                         temperature=0.3
                     )
 
@@ -439,9 +443,7 @@ User question:
                     })
 
                 except Exception as e:
-                    st.error(f"❌ HF AI Error: {e}")
-reply = response["message"]["content"]
-st.markdown(reply)
+                    st.error(f"❌ AI Error: {e}")
 # =========================
 # FOOTER
 # =========================
