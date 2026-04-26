@@ -5,25 +5,18 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 # ============================================
-# CONFIG + GOOGLE SHEET LINK
+# PROFESSIONAL LIGHT THEME V2.1 - FIX TEXT
 # ============================================
-st.set_page_config(page_title="SpecSense AI", page_icon="🎯", layout="wide")
-# ============================================
-# PROFESSIONAL LIGHT THEME - SPECSENSE V2.0
-# ============================================
-st.set_page_config(
-    page_title="SpecSense AI", 
-    page_icon="🎯", 
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# Custom CSS - Blanc + Bleu Pro
 st.markdown("""
 <style>
-    /* Main App Background */
+    /* Main App Background - Blanc */
     .stApp {
-        background-color: #F8F9FA;
+        background-color: #FFFFFF;
+    }
+    
+    /* Kolchi text f main area = K7AL */
+    .main * {
+        color: #1E3A5F !important;
     }
     
     /* Sidebar - Bleu Foncé Pro */
@@ -31,7 +24,7 @@ st.markdown("""
         background-color: #1E3A5F;
     }
     
-    /* Sidebar Text - Blanc */
+    /* Sidebar Text - BYED */
     [data-testid="stSidebar"] * {
         color: #FFFFFF !important;
     }
@@ -40,61 +33,92 @@ st.markdown("""
     [data-testid="stMetricValue"] {
         font-size: 28px;
         font-weight: 700;
-        color: #1E3A5F;
+        color: #1E3A5F !important;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        color: #1E3A5F !important;
+        font-weight: 600;
     }
     
     /* Headers */
-    h1, h2, h3 {
+    h1, h2, h3, h4, h5, h6 {
         color: #1E3A5F !important;
         font-weight: 700 !important;
+    }
+    
+    /* Normal text - K7AL */
+    p, span, div, label {
+        color: #1E3A5F !important;
     }
     
     /* Tabs - Modern */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
-        background-color: #FFFFFF;
+        background-color: #F8F9FA;
         padding: 10px;
         border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #DEE2E6;
     }
     
     .stTabs [data-baseweb="tab"] {
         height: 50px;
-        background-color: #E9ECEF;
+        background-color: #FFFFFF;
         border-radius: 8px;
-        color: #1E3A5F;
+        color: #1E3A5F !important;
         font-weight: 600;
+        border: 1px solid #DEE2E6;
     }
     
     .stTabs [aria-selected="true"] {
-        background-color: #1E3A5F;
+        background-color: #1E3A5F !important;
         color: white !important;
+        border: none;
     }
     
     /* Buttons */
     .stButton>button {
         background-color: #1E3A5F;
-        color: white;
+        color: white !important;
         border-radius: 8px;
         font-weight: 600;
         border: none;
         padding: 10px 24px;
     }
     
-    .stButton>button:hover {
-        background-color: #2C5282;
+    /* Input fields - Text k7al */
+    .stSelectbox label, .stNumberInput label {
+        color: #1E3A5F !important;
+        font-weight: 600;
     }
     
-    /* Dataframe */
-    .dataframe {
-        border: none !important;
-        border-radius: 8px;
+    input {
+        color: #1E3A5F !important;
     }
     
-    /* Success/Error/Warning Boxes */
-    .stAlert {
-        border-radius: 8px;
-        border-left: 5px solid;
+    /* Success/Error/Warning - Text k7al dakhl */
+    .stAlert * {
+        color: #1E3A5F !important;
+    }
+    
+    .stSuccess {
+        background-color: #D4EDDA !important;
+        border-left: 5px solid #28A745 !important;
+    }
+    
+    .stError {
+        background-color: #F8D7DA !important;
+        border-left: 5px solid #DC3545 !important;
+    }
+    
+    .stWarning {
+        background-color: #FFF3CD !important;
+        border-left: 5px solid #FFC107 !important;
+    }
+    
+    .stInfo {
+        background-color: #D1ECF1 !important;
+        border-left: 5px solid #17A2B8 !important;
     }
     
 </style>
