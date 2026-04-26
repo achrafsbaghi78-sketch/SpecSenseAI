@@ -366,7 +366,11 @@ with tab6:
 
     from openai import OpenAI
 
+try:
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+except Exception:
+    st.error("🚨 OPENAI_API_KEY ma kaynach f Streamlit Secrets")
+    st.stop()
 
     defects_count = len(df[df["Defect_Type"].astype(str).str.upper() != "OK"])
     top_defect = "None"
@@ -403,7 +407,7 @@ with tab6:
         else:
             with st.spinner("AI kayحلل situation..."):
                 response = client.responses.create(
-                    model="gpt-4.1-mini",
+                   model="gpt-4.1-mini",
                     input=f"""
                     You are a senior automotive quality engineer.
                     Answer in Moroccan Darija mixed with simple French/English.
