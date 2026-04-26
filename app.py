@@ -160,4 +160,4 @@ with tab6:
     col1, col2 = st.columns([1,2])
     
     with col1:
-        kpi_type = st.selectbox("Chno KPI?", ["Cpk", "Cp", "Ppk", "
+       kpi_type = st.selectbox("Chno KPI?", ["Cpk", "Cp", "Ppk", "Cg", "Cgk", "RPN"])
