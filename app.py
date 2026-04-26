@@ -21,7 +21,7 @@ with tab1:
     
 with tab2:
     # Code SPC dyalk...
-    
+        st.write("SPC - Under Construction")
 # ... etc
     # HNA CODE DYAL AI COACH...
 # BDL HNA B LINK DYAL GOOGLE SHEET DYALK
