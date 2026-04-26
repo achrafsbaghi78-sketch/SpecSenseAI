@@ -364,7 +364,82 @@ response = ollama.chat(
     model="llama3.2:3b",
     messages=messages_for_ai
 )
+# =========================
+# TAB 6: HUGGING FACE FREE AI COACH
+# =========================
+with tab6:
+    st.subheader("🤖 Hugging Face AI Quality Chat")
 
+    from huggingface_hub import InferenceClient
+
+    try:
+        client = InferenceClient(token=st.secrets["HF_TOKEN"])
+    except Exception:
+        st.error("🚨 HF_TOKEN ma kaynach f Streamlit Secrets")
+        st.stop()
+
+    if "hf_messages" not in st.session_state:
+        st.session_state.hf_messages = []
+
+    if st.button("🧹 Reset Chat"):
+        st.session_state.hf_messages = []
+
+    for msg in st.session_state.hf_messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    prompt = st.chat_input("💬 سول AI Quality Coach...")
+
+    if prompt:
+        st.session_state.hf_messages.append({"role": "user", "content": prompt})
+
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        quality_context = f"""
+Quality data:
+Mean = {mean_val:.4f}
+Std Dev = {std_val:.6f}
+Cp = {cp:.2f}
+Cpk = {cpk:.2f}
+USL = {usl}
+LSL = {lsl}
+
+User question:
+{prompt}
+"""
+
+        messages_for_ai = [
+            {
+                "role": "system",
+                "content": "You are a senior automotive quality engineer. Answer in Moroccan Darija mixed with simple French/English. Give interpretation, root causes, containment actions, corrective actions, and priority."
+            },
+            {
+                "role": "user",
+                "content": quality_context
+            }
+        ]
+
+        with st.chat_message("assistant"):
+            with st.spinner("HF AI kayحلل..."):
+                try:
+                    response = client.chat.completions.create(
+                        model="mistralai/Mistral-7B-Instruct-v0.3",
+                        messages=messages_for_ai,
+                        max_tokens=600,
+                        temperature=0.3
+                    )
+
+                    reply = response.choices[0].message.content
+                    st.markdown(reply)
+
+                    st.session_state.hf_messages.append({
+                        "role": "assistant",
+                        "content": reply
+                    })
+
+                except Exception as e:
+                    st.error(f"❌ HF AI Error: {e}")
 reply = response["message"]["content"]
 st.markdown(reply)
 # =========================
