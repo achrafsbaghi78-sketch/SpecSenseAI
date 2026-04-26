@@ -1,27 +1,14 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import numpy as np
 
-# ============================================
-# CONFIG
-# ============================================
-st.set_page_config(
-    page_title="SpecSense AI", 
-    page_icon="🎯", 
-    layout="wide"
-)
+st.set_page_config(page_title="SpecSense AI", page_icon="🎯", layout="wide")
 
-# ============================================
-# GOOGLE SHEET JDID DYALK ✅
-# ============================================
+# GOOGLE SHEET DYALK
 G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90/export?format=csv&gid=0"
 
-# ============================================
-# LOAD DATA
-# ============================================
 @st.cache_data(ttl=60)
 def load_data():
     df = pd.read_csv(G_SHEET_URL)
@@ -29,240 +16,94 @@ def load_data():
 
 try:
     df = load_data()
-except Exception as e:
-    st.error(f"🚨 Error: Ma 9drnach n9raw Google Sheet. Check l link w permission.")
-    st.error(f"Detail: {e}")
+except:
+    st.error("🚨 Error: Ma 9drnach n9raw Google Sheet")
     st.stop()
 
-# ============================================
-# SIDEBAR KPIs
-# ============================================
+# SIDEBAR
 with st.sidebar:
     st.markdown("## 📊 Live KPIs")
     st.markdown("---")
-    st.metric(label="📦 Total Mesures", value=len(df))
-    
+    st.metric("📦 Total Mesures", len(df))
     if 'Part_ID' in df.columns:
-        msa_count = len(df[df['Part_ID'].str.contains('MSA', na=False)])
-        spc_count = len(df[df['Part_ID'].str.contains('SPC', na=False)])
-        st.metric(label="📏 MSA Points", value=msa_count)
-        st.metric(label="📈 SPC Points", value=spc_count)
-    
+        st.metric("📏 MSA Points", len(df[df['Part_ID'].str.contains('MSA', na=False)]))
+        st.metric("📈 SPC Points", len(df[df['Part_ID'].str.contains('SPC', na=False)]))
     st.markdown("---")
-    st.markdown(f"🕐 **Last Update** \n{datetime.now().strftime('%H:%M:%S')}")
-    st.markdown("---")
+    st.markdown(f"🕐 {datetime.now().strftime('%H:%M:%S')}")
     st.caption("© 2026 SpecSense AI")
 
-# ============================================
 # HEADER
-# ============================================
 st.title("🎯 SpecSense AI - Quality 4.0 Suite")
 st.markdown("---")
 
-# ============================================
-# TABS
-# ============================================
+# HADI HIA LINE LI KAT3RF TAB1 - KHASSA TKOUN HNA 9BL MN WITH TAB1
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "📏 MSA Gage R&R", 
+    "📊 SPC X̄-R", 
+    "📈 Capability Cpk", 
+    "📋 Pareto Defects", 
+    "🎯 FMEA RPN",
+    "🤖 AI Coach"
+])
+
+# TAB 1: MSA
 with tab1:
-    st.subheader("📏 MSA Type 1 + Gage R&R Study")
-    
-    msa_data = df[df['Part_ID'].str.contains('MSA', na=False)]
-    
-    if len(msa_data) > 0:
-        st.write(f"**MSA Data:** {len(msa_data)} mesures")
+    st.subheader("📏 MSA Type 1")
+    if 'Part_ID' in df.columns:
+        msa_data = df[df['Part_ID'].str.contains('MSA', na=False)]
+        st.write(f"MSA Data: {len(msa_data)} mesures")
         
-        # ============================================
-        # CALCUL Cg / Cgk - IATF 7.1.5.1
-        # ============================================
-        if all(col in df.columns for col in ['MSA_Ref', 'Tolerance', 'Measurement']):
+        if len(msa_data) > 0 and all(col in df.columns for col in ['MSA_Ref', 'Tolerance']):
             ref = df['MSA_Ref'].iloc[0]
             tol = df['Tolerance'].iloc[0]
             mean_msa = msa_data['Measurement'].mean()
             std_msa = msa_data['Measurement'].std()
             
-            # Formulas IATF
             cg = (0.2 * tol) / (6 * std_msa) if std_msa > 0 else 0
             cgk = (0.1 * tol - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
             
-            # ============================================
-            # DISPLAY METRICS
-            # ============================================
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2 = st.columns(2)
             with col1:
-                st.metric("Reference", f"{ref:.3f}")
-            with col2:
-                st.metric("Mean", f"{mean_msa:.3f}")
-            with col3:
                 st.metric("Cg", f"{cg:.2f}", delta="Pass ✅" if cg >= 1.33 else "Fail ❌")
-            with col4:
+            with col2:
                 st.metric("Cgk", f"{cgk:.2f}", delta="Pass ✅" if cgk >= 1.33 else "Fail ❌")
             
-            st.markdown("---")
-            
-            # ============================================
-            # GRAPHIQUE MSA
-            # ============================================
             fig = go.Figure()
-            
-            # Mesures
-            fig.add_trace(go.Scatter(
-                y=msa_data['Measurement'],
-                mode='lines+markers',
-                name='Mesures MSA',
-                line=dict(color='#1E90FF', width=3),
-                marker=dict(size=8)
-            ))
-            
-            # Reference Line
-            fig.add_hline(y=ref, line_dash="dash", line_color="green", 
-                         annotation_text=f"Reference: {ref:.3f}")
-            
-            # Tolerance Limits
-            fig.add_hline(y=ref + tol/2, line_dash="dot", line_color="red", 
-                         annotation_text="USL")
-            fig.add_hline(y=ref - tol/2, line_dash="dot", line_color="red", 
-                         annotation_text="LSL")
-            
-            fig.update_layout(
-                title="MSA Type 1 - Run Chart",
-                xaxis_title="Mesure #",
-                yaxis_title="Valeur Mesurée",
-                height=400,
-                template="plotly_dark"
-            )
-            
+            fig.add_trace(go.Scatter(y=msa_data['Measurement'], mode='lines+markers', name='Mesures'))
+            fig.add_hline(y=ref, line_dash="dash", line_color="green", annotation_text="Ref")
+            fig.update_layout(title="MSA Run Chart", template="plotly_dark", height=400)
             st.plotly_chart(fig, use_container_width=True)
-            
-            # ============================================
-            # DIAGNOSTIC IATF
-            # ============================================
-            if cg < 1.33 or cgk < 1.33:
-                st.error("🚨 **MSA FAIL - Non-Compliant IATF 7.1.5.1**")
-                st.markdown("""
-                **Mochkil:** Variation dyal appareil ktira bzaf
-                
-                **7al Urgent:**
-                1. Calibration dyal l'appareil
-                2. Training dyal operator
-                3. Gage R&R complet
-                4. STOP production 7ta ytsla7
-                """)
-            else:
-                st.success("✅ **MSA PASS - IATF 7.1.5.1 Compliant**")
-                st.markdown("**Tafsir:** L'appareil stable, repeatable w accurate. Validé.")
-        else:
-            st.warning("⚠️ Khass `MSA_Ref` w `Tolerance` f Google Sheet")
-    else:
-        st.warning("⚠️ Ma kaynch MSA data f Sheet. Zid Part_ID = 'MSA'")
-with tab1:
-    st.subheader("📏 MSA Type 1 + Gage R&R Study")
-    
-    if 'Part_ID' in df.columns:
-        msa_data = df[df['Part_ID'].str.contains('MSA', na=False)]
-        
-        if len(msa_data) > 0:
-            st.write("MSA Data:", len(msa_data), "mesures")
-            
-            if 'MSA_Ref' in df.columns and 'Tolerance' in df.columns:
-                ref = df['MSA_Ref'].iloc[0]
-                tol = df['Tolerance'].iloc[0]
-                mean_msa = msa_data['Measurement'].mean()
-                std_msa = msa_data['Measurement'].std()
-                
-                cg = (0.2 * tol) / (6 * std_msa) if std_msa > 0 else 0
-                cgk = (0.1 * tol - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Cg", f"{cg:.2f}", delta="Pass ✅" if cg >= 1.33 else "Fail ❌")
-                with col2:
-                    st.metric("Cgk", f"{cgk:.2f}", delta="Pass ✅" if cgk >= 1.33 else "Fail ❌")
-        else:
-            st.warning("⚠️ Ma kaynch MSA data f Sheet")
-    else:
-        st.warning("⚠️ Column 'Part_ID' ma kaynach f Sheet")
 
-# ============================================
-# TAB 2: SPC
-# ============================================
+# TAB 2
 with tab2:
-    st.subheader("📊 SPC X̄-R Control Chart")
-    
-    if 'Part_ID' in df.columns:
-        spc_data = df[df['Part_ID'].str.contains('SPC', na=False)]
-        
-        if len(spc_data) > 0:
-            st.write("SPC Data:", len(spc_data), "points")
-            st.line_chart(spc_data['Measurement'])
-        else:
-            st.info("📊 SPC - Mazal ma kaynch data SPC f Sheet")
+    st.subheader("📊 SPC X̄-R")
+    st.write("SPC - Under Construction")
 
-# ============================================
-# TAB 3: CPK
-# ============================================
+# TAB 3
 with tab3:
-    st.subheader("📈 Process Capability - Cpk/Ppk")
-    
-    if 'USL' in df.columns and 'LSL' in df.columns and 'Measurement' in df.columns:
+    st.subheader("📈 Capability Cpk")
+    if all(col in df.columns for col in ['USL', 'LSL', 'Measurement']):
         usl = df['USL'].iloc[0]
         lsl = df['LSL'].iloc[0]
         mean = df['Measurement'].mean()
         std = df['Measurement'].std()
-        
-        cp = (usl - lsl) / (6 * std) if std > 0 else 0
         cpk = min((usl - mean) / (3 * std), (mean - lsl) / (3 * std)) if std > 0 else 0
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Cp", f"{cp:.2f}")
-        with col2:
-            st.metric("Cpk", f"{cpk:.2f}", delta="Not Capable ⚠️" if cpk < 1.33 else "Capable ✅")
-        with col3:
-            sigma = (cpk * 3) if cpk > 0 else 0
-            st.metric("Sigma Level", f"{sigma:.1f}σ")
-    else:
-        st.warning("⚠️ Khass USL, LSL, Measurement f Google Sheet")
+        st.metric("Cpk", f"{cpk:.2f}", delta="Capable ✅" if cpk >= 1.33 else "Not Capable ⚠️")
 
-# ============================================
-# TAB 4: PARETO
-# ============================================
+# TAB 4
 with tab4:
-    st.subheader("📋 Pareto Analysis - Defects")
-    st.info("🚧 Pareto - Mazal khassna n3mroha")
+    st.subheader("📋 Pareto Defects")
+    st.info("🚧 Mazal")
 
-# ============================================
-# TAB 5: FMEA
-# ============================================
+# TAB 5
 with tab5:
-    st.subheader("🎯 FMEA Risk Priority Number")
-    st.info("🚧 FMEA - Mazal khassna n3mroha")
+    st.subheader("🎯 FMEA RPN")
+    st.info("🚧 Mazal")
 
-# ============================================
-# TAB 6: AI COACH - FIXED
-# ============================================
+# TAB 6
 with tab6:
-    st.subheader("🤖 SpecSense AI Coach - Decision Maker")
-    st.caption("3tini ay KPI w ngolik mochkil + 7al + Action Plan IATF 16949")
-    
-    col1, col2 = st.columns([1,2])
-    
-    with col1:
-        kpi_type = st.selectbox("Chno KPI?", ["Cpk", "Cp", "Ppk", "Cg", "Cgk", "RPN"])
-        kpi_value = st.number_input("Dkhl Value", value=1.0, step=0.01, format="%.2f")
-        
-        if st.button("🚀 Analyse Liya", use_container_width=True):
-            st.session_state.analyze = True
-    
-    with col2:
-        if 'analyze' in st.session_state:
-            st.markdown("### 📋 Diagnostic + Action Plan")
-            
-            if kpi_type == "Cpk":
-                if kpi_value >= 1.67:
-                    st.success("✅ **Excellent - World Class**")
-                    st.markdown("**Tafsir:** Process capable bzaf. 6 Sigma level.")
-                elif kpi_value >= 1.33:
-                    st.success("✅ **Good - IATF Compliant**")
-                    st.markdown("**Tafsir:** Process capable. Conforme IATF 16949.")
-                elif kpi_value >= 1.00:
-                    st.warning("⚠️ **Marginal - Risk**")
-                    st.markdown("**7al:** 1) 100% Sort 2) 8D Analysis 3) Process improvement")
+    st.subheader("🤖 AI Coach")
+    st.write("AI Coach - Under Construction")
+
+st.markdown("---")
+st.caption("SpecSense AI V1.0 | IATF 16949:2016 Compliant")
