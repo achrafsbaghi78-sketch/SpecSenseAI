@@ -196,6 +196,81 @@ with tab5:
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("Khass Severity, Occurrence, Detection, Defect_Type f Sheet")
+# ============================================
+# TAB 6: AI QUALITY COACH 🤖
+# ============================================
+tab6 = st.tabs(["🤖 AI Coach"])[0]
 
+with tab6:
+    st.subheader("🤖 SpecSense AI Coach - Decision Maker")
+    st.caption("3tini ay KPI w ngolik mochkil + 7al + Action Plan IATF 16949")
+    
+    col1, col2 = st.columns([1,2])
+    
+    with col1:
+        kpi_type = st.selectbox("Chno KPI?", ["Cpk", "Cp", "Ppk", "Cg", "Cgk", "RPN"])
+        kpi_value = st.number_input("Dkhl Value", value=1.0, step=0.01, format="%.2f")
+        
+        if st.button("🚀 Analyse Liya", use_container_width=True):
+            st.session_state.analyze = True
+    
+    with col2:
+        if 'analyze' in st.session_state:
+            st.markdown("### 📋 Diagnostic + Action Plan")
+            
+            # CPK LOGIC
+            if kpi_type == "Cpk":
+                if kpi_value >= 1.67:
+                    st.success("✅ **Excellent - World Class**")
+                    st.write("**Tafsir:** Process capable bzaf. 6 Sigma level.")
+                    st.write("**Action:** 1) Maintain current controls 2) Reduce inspection frequency 3) Use for customer audit")
+                elif kpi_value >= 1.33:
+                    st.success("✅ **Good - IATF Compliant**")
+                    st.write("**Tafsir:** Process capable. Conforme IATF 16949.")
+                    st.write("**Action:** 1) Continue SPC monitoring 2) Review if customer requires Cpk>1.67")
+                elif kpi_value >= 1.00:
+                    st.warning("⚠️ **Marginal - Risk**")
+                    st.write("**Mochkil:** Process 3la 7d. Ay shift sghira = Non-conforme.")
+                    st.write("**7al IATF 8.5.1:** 1) 100% Sort for next 3 lots 2) 8D Analysis 3) Process improvement Kaizen 4) Re-qualify")
+                else:
+                    st.error("🚨 **Not Capable - NOK**")
+                    st.write("**Mochkil:** Process ma 9adch y produce f tolerance. Defects ghadi ykhrjo.")
+                    st.write("**7al Urgent IATF 8.7:** 1) STOP PRODUCTION 2) Containment lot précédent 3) 8D + 5Why 4) Corrective: Tooling/Fixture/Parameter 5) Re-PPAP")
+            
+            # CG LOGIC - MSA
+            elif kpi_type == "Cg":
+                if kpi_value >= 1.33:
+                    st.success("✅ **MSA Pass - IATF 7.1.5.1**")
+                    st.write("**Tafsir:** L'appareil stable w repeatable.")
+                    st.write("**Action:** 1) Document MSA report 2) Calibration OK 3) Use for production")
+                else:
+                    st.error("🚨 **MSA Fail - Non-Compliant**")
+                    st.write("**Mochkil:** Variation dyal appareil ktira. Ma t9drch t9iss b ti9a.")
+                    st.write("**7al IATF 7.1.5.2:** 1) STOP - Ma tsta3mlch appareil 2) Calibration externe 3) Training opérateur 4) Gage R&R complet 5) Ila ba9i NOK = Change equipment")
+            
+            # RPN LOGIC - FMEA
+            elif kpi_type == "RPN":
+                if kpi_value >= 100:
+                    st.error("🔴 **High Risk - Action Required IATF 6.1**")
+                    st.write("**Mochkil:** Risk kbir. Customer impact possible.")
+                    st.write("**7al:** 1) Action prioritaire <30 jours 2) Poka-Yoke 3) Control Plan update 4) Re-calculate RPN after action <50")
+                elif kpi_value >= 50:
+                    st.warning("🟠 **Medium Risk**")
+                    st.write("**Action:** Plan d'amélioration 90 jours. Monitor f SPC.")
+                else:
+                    st.success("🟢 **Low Risk - Acceptable**")
+                    st.write("**Action:** Monitor only. No action required.")
+            
+            # CP LOGIC
+            elif kpi_type == "Cp":
+                if kpi_value >= 1.33:
+                    st.success("✅ **Process Potential OK**")
+                    st.write("**Tafsir:** Dispersion mzyana. Ila centré ghadi ykoun Cpk=CP")
+                else:
+                    st.error("🚨 **Variation Ktira**")
+                    st.write("**Mochkil:** Process ma stable. Khass reduction variation.")
+                    st.write("**7al:** 1) DOE study 2) Identify X variables 3) SPC + 6M analysis")
+            
+            st.info("💡 **Note IATF:** Kol action khassha tkoun documented f Control Plan + FMEA + 8D ila tlb l7al")
 st.markdown("---")
 st.caption(f"SpecSense AI v1.0 | IATF 16949:2016 Compliant | Last Update: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
