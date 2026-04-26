@@ -5,61 +5,24 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 # ============================================
-# SIDEBAR MENU - PRO NAVIGATION
+# TABS ORIGINAL
 # ============================================
-with st.sidebar:
-    st.markdown("---")
-    st.markdown("## 🎯 Navigation")
-    
-    menu = st.radio(
-        label="Khtar Module:",
-        options=[
-            "📏 MSA Gage R&R", 
-            "📊 SPC X̄-R", 
-            "📈 Capability Cpk", 
-            "📋 Pareto Defects", 
-            "🎯 FMEA RPN",
-            "🤖 AI Coach"
-        ],
-        label_visibility="collapsed"
-    )
-    
-    st.markdown("---")
-    st.caption("© 2026 SpecSense AI")
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "📏 MSA Gage R&R", 
+    "📊 SPC X̄-R", 
+    "📈 Capability Cpk", 
+    "📋 Pareto Defects", 
+    "🎯 FMEA RPN",
+    "🤖 AI Coach"
+])
 
-# ============================================
-# MAIN CONTENT - BDL TABS B IF/ELIF
-# ============================================
-
-# TAB 1: MSA
-if menu == "📏 MSA Gage R&R":
-    st.subheader("📏 MSA Type 1 + Gage R&R Study")
-    # HNA CODE DYALK DYAL MSA KAML...
-    # st.metric("Cg", cg_value)...
+with tab1:
+    # Code MSA dyalk...
     
-# TAB 2: SPC
-elif menu == "📊 SPC X̄-R":
-    st.subheader("📊 SPC X̄-R Control Chart")
-    # HNA CODE DYALK DYAL SPC...
+with tab2:
+    # Code SPC dyalk...
     
-# TAB 3: Cpk
-elif menu == "📈 Capability Cpk":
-    st.subheader("📈 Process Capability Analysis")
-    # HNA CODE DYALK DYAL CPK...
-    
-# TAB 4: Pareto
-elif menu == "📋 Pareto Defects":
-    st.subheader("📋 Pareto Analysis - Defects")
-    # HNA CODE DYALK DYAL PARETO...
-    
-# TAB 5: FMEA
-elif menu == "🎯 FMEA RPN":
-    st.subheader("🎯 FMEA Risk Priority Number")
-    # HNA CODE DYALK DYAL FMEA...
-    
-# TAB 6: AI COACH
-elif menu == "🤖 AI Coach":
-    st.subheader("🤖 SpecSense AI Coach - Decision Maker")
+# ... etc
     # HNA CODE DYAL AI COACH...
 # BDL HNA B LINK DYAL GOOGLE SHEET DYALK
 # MOHIM: Khass ykoun f lakher: /export?format=csv&gid=0
