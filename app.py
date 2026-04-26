@@ -5,120 +5,74 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 # ============================================
-# PROFESSIONAL LIGHT THEME V2.1 - FIX TEXT
+# BUTTONS PRO DESIGN ONLY - DARK MODE ORIGINAL
 # ============================================
 st.markdown("""
 <style>
-    /* Main App Background - Blanc */
-    .stApp {
-        background-color: #FFFFFF;
-    }
-    
-    /* Kolchi text f main area = K7AL */
-    .main * {
-        color: #1E3A5F !important;
-    }
-    
-    /* Sidebar - Bleu Foncé Pro */
-    [data-testid="stSidebar"] {
-        background-color: #1E3A5F;
-    }
-    
-    /* Sidebar Text - BYED */
-    [data-testid="stSidebar"] * {
-        color: #FFFFFF !important;
-    }
-    
-    /* Metrics Cards */
-    [data-testid="stMetricValue"] {
-        font-size: 28px;
+    /* Modern Buttons - Gradient Bleu */
+    .stButton>button {
+        background: linear-gradient(135deg, #1E90FF 0%, #0066CC 100%);
+        color: white !important;
+        border-radius: 12px;
         font-weight: 700;
-        color: #1E3A5F !important;
+        font-size: 16px;
+        border: none;
+        padding: 12px 28px;
+        box-shadow: 0 4px 15px rgba(30, 144, 255, 0.4);
+        transition: all 0.3s ease;
     }
     
-    [data-testid="stMetricLabel"] {
-        color: #1E3A5F !important;
-        font-weight: 600;
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #0066CC 0%, #004C99 100%);
+        box-shadow: 0 6px 20px rgba(30, 144, 255, 0.6);
+        transform: translateY(-2px);
     }
     
-    /* Headers */
-    h1, h2, h3, h4, h5, h6 {
-        color: #1E3A5F !important;
-        font-weight: 700 !important;
+    .stButton>button:active {
+        transform: translateY(0px);
+        box-shadow: 0 2px 10px rgba(30, 144, 255, 0.4);
     }
     
-    /* Normal text - K7AL */
-    p, span, div, label {
-        color: #1E3A5F !important;
-    }
-    
-    /* Tabs - Modern */
+    /* Tabs - Modern Dark */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: #F8F9FA;
-        padding: 10px;
-        border-radius: 10px;
-        border: 1px solid #DEE2E6;
+        gap: 10px;
+        background-color: #262730;
+        padding: 12px;
+        border-radius: 12px;
     }
     
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        background-color: #FFFFFF;
-        border-radius: 8px;
-        color: #1E3A5F !important;
+        height: 55px;
+        background-color: #3D3D3D;
+        border-radius: 10px;
+        color: #FFFFFF;
         font-weight: 600;
-        border: 1px solid #DEE2E6;
+        font-size: 15px;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: #4A4A4A;
+        border: 2px solid #1E90FF;
     }
     
     .stTabs [aria-selected="true"] {
-        background-color: #1E3A5F !important;
+        background: linear-gradient(135deg, #1E90FF 0%, #0066CC 100%);
         color: white !important;
-        border: none;
+        border: 2px solid #1E90FF;
+        box-shadow: 0 4px 15px rgba(30, 144, 255, 0.4);
     }
     
-    /* Buttons */
-    .stButton>button {
-        background-color: #1E3A5F;
-        color: white !important;
-        border-radius: 8px;
-        font-weight: 600;
-        border: none;
-        padding: 10px 24px;
+    /* Selectbox + NumberInput - Modern */
+    .stSelectbox > div > div, .stNumberInput > div > div {
+        border-radius: 10px;
+        border: 2px solid #3D3D3D;
     }
     
-    /* Input fields - Text k7al */
-    .stSelectbox label, .stNumberInput label {
-        color: #1E3A5F !important;
-        font-weight: 600;
-    }
-    
-    input {
-        color: #1E3A5F !important;
-    }
-    
-    /* Success/Error/Warning - Text k7al dakhl */
-    .stAlert * {
-        color: #1E3A5F !important;
-    }
-    
-    .stSuccess {
-        background-color: #D4EDDA !important;
-        border-left: 5px solid #28A745 !important;
-    }
-    
-    .stError {
-        background-color: #F8D7DA !important;
-        border-left: 5px solid #DC3545 !important;
-    }
-    
-    .stWarning {
-        background-color: #FFF3CD !important;
-        border-left: 5px solid #FFC107 !important;
-    }
-    
-    .stInfo {
-        background-color: #D1ECF1 !important;
-        border-left: 5px solid #17A2B8 !important;
+    .stSelectbox > div > div:focus-within, .stNumberInput > div > div:focus-within {
+        border: 2px solid #1E90FF;
+        box-shadow: 0 0 10px rgba(30, 144, 255, 0.3);
     }
     
 </style>
