@@ -5,78 +5,62 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 # ============================================
-# BUTTONS PRO DESIGN ONLY - DARK MODE ORIGINAL
+# SIDEBAR MENU - PRO NAVIGATION
 # ============================================
-st.markdown("""
-<style>
-    /* Modern Buttons - Gradient Bleu */
-    .stButton>button {
-        background: linear-gradient(135deg, #1E90FF 0%, #0066CC 100%);
-        color: white !important;
-        border-radius: 12px;
-        font-weight: 700;
-        font-size: 16px;
-        border: none;
-        padding: 12px 28px;
-        box-shadow: 0 4px 15px rgba(30, 144, 255, 0.4);
-        transition: all 0.3s ease;
-    }
+with st.sidebar:
+    st.markdown("---")
+    st.markdown("## 🎯 Navigation")
     
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #0066CC 0%, #004C99 100%);
-        box-shadow: 0 6px 20px rgba(30, 144, 255, 0.6);
-        transform: translateY(-2px);
-    }
+    menu = st.radio(
+        label="Khtar Module:",
+        options=[
+            "📏 MSA Gage R&R", 
+            "📊 SPC X̄-R", 
+            "📈 Capability Cpk", 
+            "📋 Pareto Defects", 
+            "🎯 FMEA RPN",
+            "🤖 AI Coach"
+        ],
+        label_visibility="collapsed"
+    )
     
-    .stButton>button:active {
-        transform: translateY(0px);
-        box-shadow: 0 2px 10px rgba(30, 144, 255, 0.4);
-    }
+    st.markdown("---")
+    st.caption("© 2026 SpecSense AI")
+
+# ============================================
+# MAIN CONTENT - BDL TABS B IF/ELIF
+# ============================================
+
+# TAB 1: MSA
+if menu == "📏 MSA Gage R&R":
+    st.subheader("📏 MSA Type 1 + Gage R&R Study")
+    # HNA CODE DYALK DYAL MSA KAML...
+    # st.metric("Cg", cg_value)...
     
-    /* Tabs - Modern Dark */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-        background-color: #262730;
-        padding: 12px;
-        border-radius: 12px;
-    }
+# TAB 2: SPC
+elif menu == "📊 SPC X̄-R":
+    st.subheader("📊 SPC X̄-R Control Chart")
+    # HNA CODE DYALK DYAL SPC...
     
-    .stTabs [data-baseweb="tab"] {
-        height: 55px;
-        background-color: #3D3D3D;
-        border-radius: 10px;
-        color: #FFFFFF;
-        font-weight: 600;
-        font-size: 15px;
-        border: 2px solid transparent;
-        transition: all 0.3s ease;
-    }
+# TAB 3: Cpk
+elif menu == "📈 Capability Cpk":
+    st.subheader("📈 Process Capability Analysis")
+    # HNA CODE DYALK DYAL CPK...
     
-    .stTabs [data-baseweb="tab"]:hover {
-        background-color: #4A4A4A;
-        border: 2px solid #1E90FF;
-    }
+# TAB 4: Pareto
+elif menu == "📋 Pareto Defects":
+    st.subheader("📋 Pareto Analysis - Defects")
+    # HNA CODE DYALK DYAL PARETO...
     
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #1E90FF 0%, #0066CC 100%);
-        color: white !important;
-        border: 2px solid #1E90FF;
-        box-shadow: 0 4px 15px rgba(30, 144, 255, 0.4);
-    }
+# TAB 5: FMEA
+elif menu == "🎯 FMEA RPN":
+    st.subheader("🎯 FMEA Risk Priority Number")
+    # HNA CODE DYALK DYAL FMEA...
     
-    /* Selectbox + NumberInput - Modern */
-    .stSelectbox > div > div, .stNumberInput > div > div {
-        border-radius: 10px;
-        border: 2px solid #3D3D3D;
-    }
-    
-    .stSelectbox > div > div:focus-within, .stNumberInput > div > div:focus-within {
-        border: 2px solid #1E90FF;
-        box-shadow: 0 0 10px rgba(30, 144, 255, 0.3);
-    }
-    
-</style>
-""", unsafe_allow_html=True)
+# TAB 6: AI COACH
+elif menu == "🤖 AI Coach":
+    st.subheader("🤖 SpecSense AI Coach - Decision Maker")
+    # HNA CODE DYAL AI COACH...
 # BDL HNA B LINK DYAL GOOGLE SHEET DYALK
 # MOHIM: Khass ykoun f lakher: /export?format=csv&gid=0
 G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90/export?format=csv&gid=0"
