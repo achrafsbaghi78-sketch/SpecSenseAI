@@ -52,7 +52,18 @@ with tab1:
     if 'Part_ID' in df.columns:
         msa_data = df[df['Part_ID'].str.contains('MSA', na=False)]
         st.write(f"MSA Data: {len(msa_data)} mesures")
+        with tab1:
+    st.subheader("📏 MSA Type 1")
+    if 'Part_ID' in df.columns:
+        msa_data = df[df['Part_ID'].str.contains('MSA', na=False)]
+        st.write(f"MSA Data: {len(msa_data)} mesures")
         
+        # ZID HADI BACH NCHOUF COLUMNS DYAL SHEET
+        st.write("**Columns li kaynin f Sheet:**", list(df.columns))
+        st.dataframe(msa_data.head(3)) # Nchouf 3 rows lwla
+        
+        if len(msa_data) > 0 and all(col in df.columns for col in ['MSA_Ref', 'Tolerance']):
+            # code Cg/Cgk...
         if len(msa_data) > 0 and all(col in df.columns for col in ['MSA_Ref', 'Tolerance']):
             ref = df['MSA_Ref'].iloc[0]
             tol = df['Tolerance'].iloc[0]
