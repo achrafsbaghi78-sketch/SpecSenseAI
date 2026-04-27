@@ -20,58 +20,116 @@ st.set_page_config(
 st.markdown("""
 <style>
 .stApp {
-    background: #071016;
+    background: linear-gradient(135deg, #071016 0%, #0f172a 100%);
     color: white;
 }
 
 [data-testid="stSidebar"] {
-    background: #151b25;
+    background: #111827;
 }
 
 .big-title {
-    font-size: 36px;
+    font-size: 46px;
     font-weight: 900;
     color: white;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    line-height: 1.1;
 }
 
 .sub-title {
-    color: #aab2c0;
-    font-size: 15px;
-    margin-bottom: 18px;
+    color: #cbd5e1;
+    font-size: 20px;
+    margin-bottom: 24px;
 }
 
 div[data-testid="stMetric"] {
     background: #111827;
-    padding: 16px;
-    border-radius: 16px;
-    border: 1px solid #263241;
+    padding: 24px;
+    border-radius: 22px;
+    border: 1px solid #334155;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+div[data-testid="stMetricLabel"] {
+    font-size: 18px;
+    font-weight: 700;
 }
 
 div[data-testid="stMetricValue"] {
-    font-size: 28px;
+    font-size: 38px;
+    font-weight: 900;
+}
+
+div[data-testid="stMetricDelta"] {
+    font-size: 16px;
 }
 
 .stTabs [data-baseweb="tab-list"] {
-    gap: 4px;
+    gap: 10px;
     overflow-x: auto;
 }
 
 .stTabs [data-baseweb="tab"] {
-    font-size: 13px;
-    padding: 8px 10px;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 14px 18px;
     white-space: nowrap;
+}
+
+h1, h2, h3 {
+    font-weight: 900;
+}
+
+h2 {
+    font-size: 32px !important;
+}
+
+h3 {
+    font-size: 26px !important;
+}
+
+.stDataFrame {
+    font-size: 16px;
+}
+
+button {
+    border-radius: 16px !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
 }
 
 @media (max-width: 768px) {
     .big-title {
-        font-size: 28px;
+        font-size: 34px;
     }
+
     .sub-title {
-        font-size: 13px;
+        font-size: 16px;
     }
+
+    div[data-testid="stMetric"] {
+        padding: 18px;
+    }
+
+    div[data-testid="stMetricLabel"] {
+        font-size: 15px;
+    }
+
     div[data-testid="stMetricValue"] {
-        font-size: 22px;
+        font-size: 30px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        font-size: 15px;
+        padding: 10px 12px;
+    }
+
+    h2 {
+        font-size: 26px !important;
+    }
+
+    h3 {
+        font-size: 22px !important;
     }
 }
 </style>
