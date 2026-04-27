@@ -408,24 +408,48 @@ with tab5:
     st.subheader("🎯 Analyse AMDEC automatique")
 
     if all(col in df.columns for col in ["Severity", "Occurrence", "Detection"]):
+
         fmea = df.copy()
+
+        # Calcul RPN
         fmea["RPN"] = fmea["Severity"] * fmea["Occurrence"] * fmea["Detection"]
-        fmea = fmea.sort_values(by="RPN", ascending=False)
 
-        def get_priority(rpn):
-            if rpn >= 150:
-                return "🔴 Critique"
-            elif rpn >= 100:
-                return "🟡 Élevé"
+        # Statut selon RPN
+        def get_status(rpn):
+            if rpn < 100:
+                return "🟢 OK"
+            elif rpn < 150:
+                return "🟡 À surveiller"
             else:
-                return "🟢 Moyen"
+                return "🔴 Action requise"
 
-        fmea["Priorité"] = fmea["RPN"].apply(get_priority)
+        # Explication des notes
+        def get_explication(row):
+            return (
+                f"Gravité {row['Severity']} = impact du défaut | "
+                f"Occurrence {row['Occurrence']} = fréquence d’apparition | "
+                f"Détection {row['Detection']} = capacité de détection"
+            )
+
+        # Action recommandée
+        def get_action(rpn):
+            if rpn < 100:
+                return "Processus acceptable, continuer la surveillance."
+            elif rpn < 150:
+                return "Mettre en place une action d’amélioration."
+            else:
+                return "Action immédiate : sécuriser, analyser la cause racine et corriger."
+
+        fmea["Statut"] = fmea["RPN"].apply(get_status)
+        fmea["Explication"] = fmea.apply(get_explication, axis=1)
+        fmea["Action recommandée"] = fmea["RPN"].apply(get_action)
+
+        fmea = fmea.sort_values(by="RPN", ascending=False)
 
         c1, c2, c3 = st.columns(3)
         c1.metric("RPN maximum", int(fmea["RPN"].max()))
         c2.metric("RPN moyen", f"{fmea['RPN'].mean():.1f}")
-        c3.metric("Risques critiques", len(fmea[fmea["RPN"] >= 150]))
+        c3.metric("Actions requises", len(fmea[fmea["RPN"] >= 100]))
 
         st.markdown("---")
 
@@ -436,49 +460,27 @@ with tab5:
             "Occurrence",
             "Detection",
             "RPN",
-            "Priorité"
+            "Statut",
+            "Explication",
+            "Action recommandée"
         ]].rename(columns={
             "Part_ID": "Référence pièce",
             "Defect_Type": "Type de défaut",
             "Severity": "Gravité",
-            "Occurrence": "Occurrence",
             "Detection": "Détection"
         })
 
         st.dataframe(table_fmea, use_container_width=True)
 
-        top_risk = fmea.iloc[0]
+        st.info("""
+Règle utilisée :
+- RPN < 100 : OK
+- RPN entre 100 et 149 : À surveiller
+- RPN ≥ 150 : Action immédiate requise
+""")
 
-        st.markdown("## 🤖 Actions recommandées par l’IA")
-        st.write(f"Risque principal : **{top_risk['Defect_Type']}**")
-        st.write(f"RPN : **{top_risk['RPN']}**")
-
-        if top_risk["RPN"] >= 150:
-            st.error("🔴 Risque critique - Action immédiate requise")
-            st.markdown("""
-- Arrêter la production si nécessaire
-- Isoler les pièces non conformes
-- Vérifier l’état de la machine / du montage
-- Réaliser une analyse des causes racines avec les 5 Pourquoi
-- Lancer un plan d’actions correctives
-""")
-        elif top_risk["RPN"] >= 100:
-            st.warning("🟡 Risque élevé - Amélioration nécessaire")
-            st.markdown("""
-- Augmenter la fréquence de contrôle
-- Former les opérateurs
-- Renforcer la maîtrise du processus
-- Réduire la variation
-""")
-        else:
-            st.success("🟢 Risque acceptable")
-            st.markdown("""
-- Continuer la surveillance
-- Maintenir le processus standard
-""")
     else:
         st.warning("Colonnes manquantes : Gravité / Occurrence / Détection.")
-
 # =========================
 # TAB 6: IA HUGGING FACE
 # =========================
