@@ -414,7 +414,7 @@ with tab5:
         # Calcul RPN
         fmea["RPN"] = fmea["Severity"] * fmea["Occurrence"] * fmea["Detection"]
 
-        # Statut selon RPN
+        # Statut
         def get_status(rpn):
             if rpn < 100:
                 return "🟢 OK"
@@ -423,33 +423,24 @@ with tab5:
             else:
                 return "🔴 Action requise"
 
-        # Explication des notes
-        def get_explication(row):
-            return (
-                f"Gravité {row['Severity']} = impact du défaut | "
-                f"Occurrence {row['Occurrence']} = fréquence d’apparition | "
-                f"Détection {row['Detection']} = capacité de détection"
-            )
-
-        # Action recommandée
+        # Action
         def get_action(rpn):
             if rpn < 100:
-                return "Processus acceptable, continuer la surveillance."
+                return "Processus acceptable"
             elif rpn < 150:
-                return "Mettre en place une action d’amélioration."
+                return "Amélioration recommandée"
             else:
-                return "Action immédiate : sécuriser, analyser la cause racine et corriger."
+                return "Action immédiate requise"
 
         fmea["Statut"] = fmea["RPN"].apply(get_status)
-        fmea["Explication"] = fmea.apply(get_explication, axis=1)
-        fmea["Action recommandée"] = fmea["RPN"].apply(get_action)
+        fmea["Action"] = fmea["RPN"].apply(get_action)
 
         fmea = fmea.sort_values(by="RPN", ascending=False)
 
         c1, c2, c3 = st.columns(3)
         c1.metric("RPN maximum", int(fmea["RPN"].max()))
         c2.metric("RPN moyen", f"{fmea['RPN'].mean():.1f}")
-        c3.metric("Actions requises", len(fmea[fmea["RPN"] >= 100]))
+        c3.metric("Risques critiques", len(fmea[fmea["RPN"] >= 150]))
 
         st.markdown("---")
 
@@ -461,8 +452,7 @@ with tab5:
             "Detection",
             "RPN",
             "Statut",
-            "Explication",
-            "Action recommandée"
+            "Action"
         ]].rename(columns={
             "Part_ID": "Référence pièce",
             "Defect_Type": "Type de défaut",
@@ -473,10 +463,9 @@ with tab5:
         st.dataframe(table_fmea, use_container_width=True)
 
         st.info("""
-Règle utilisée :
-- RPN < 100 : OK
-- RPN entre 100 et 149 : À surveiller
-- RPN ≥ 150 : Action immédiate requise
+Règle:
+- RPN < 100 → OK
+- RPN ≥ 100 → Action requise
 """)
 
     else:
