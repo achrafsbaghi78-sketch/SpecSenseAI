@@ -464,7 +464,45 @@ with tab5:
         })
 
         st.dataframe(table_fmea, use_container_width=True)
+st.markdown("### 📊 Grille de cotation AMDEC")
 
+g1, g2, g3 = st.columns(3)
+
+with g1:
+    st.markdown("#### 🔴 Gravité")
+    st.dataframe(pd.DataFrame({
+        "Note": [1, 5, 8, 10],
+        "Signification": [
+            "Impact très faible",
+            "Impact moyen",
+            "Impact important",
+            "Danger critique / sécurité"
+        ]
+    }), use_container_width=True, hide_index=True)
+
+with g2:
+    st.markdown("#### 🔁 Occurrence")
+    st.dataframe(pd.DataFrame({
+        "Note": [1, 4, 7, 10],
+        "Signification": [
+            "Très rare",
+            "Occasionnel",
+            "Fréquent",
+            "Très fréquent"
+        ]
+    }), use_container_width=True, hide_index=True)
+
+with g3:
+    st.markdown("#### 👁 Détection")
+    st.dataframe(pd.DataFrame({
+        "Note": [1, 5, 8, 10],
+        "Signification": [
+            "Défaut facilement détectable",
+            "Détection moyenne",
+            "Difficile à détecter",
+            "Impossible à détecter"
+        ]
+    }), use_container_width=True, hide_index=True)
         # règle
         st.info("""
 Règle AMDEC utilisée :
