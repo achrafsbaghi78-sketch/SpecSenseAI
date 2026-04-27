@@ -414,29 +414,30 @@ with tab5:
         # Calcul RPN
         fmea["RPN"] = fmea["Severity"] * fmea["Occurrence"] * fmea["Detection"]
 
-        # Statut
+        # Statut (رجعناه كيف كان)
         def get_status(rpn):
-            if rpn < 100:
-                return "🟢 OK"
-            elif rpn < 150:
-                return "🟡 À surveiller"
+            if rpn >= 150:
+                return "🔴 Critique"
+            elif rpn >= 100:
+                return "🟡 Élevé"
             else:
-                return "🔴 Action requise"
+                return "🟢 Moyen"
 
         # Action
         def get_action(rpn):
-            if rpn < 100:
-                return "Processus acceptable"
-            elif rpn < 150:
-                return "Amélioration recommandée"
-            else:
+            if rpn >= 150:
                 return "Action immédiate requise"
+            elif rpn >= 100:
+                return "Amélioration nécessaire"
+            else:
+                return "Risque acceptable"
 
         fmea["Statut"] = fmea["RPN"].apply(get_status)
         fmea["Action"] = fmea["RPN"].apply(get_action)
 
         fmea = fmea.sort_values(by="RPN", ascending=False)
 
+        # KPIs
         c1, c2, c3 = st.columns(3)
         c1.metric("RPN maximum", int(fmea["RPN"].max()))
         c2.metric("RPN moyen", f"{fmea['RPN'].mean():.1f}")
@@ -444,6 +445,7 @@ with tab5:
 
         st.markdown("---")
 
+        # Tableau final
         table_fmea = fmea[[
             "Part_ID",
             "Defect_Type",
@@ -457,15 +459,18 @@ with tab5:
             "Part_ID": "Référence pièce",
             "Defect_Type": "Type de défaut",
             "Severity": "Gravité",
+            "Occurrence": "Occurrence",
             "Detection": "Détection"
         })
 
         st.dataframe(table_fmea, use_container_width=True)
 
+        # règle
         st.info("""
-Règle:
-- RPN < 100 → OK
-- RPN ≥ 100 → Action requise
+Règle AMDEC utilisée :
+- 🔴 RPN ≥ 150 → Critique  
+- 🟡 100 ≤ RPN < 150 → Élevé  
+- 🟢 RPN < 100 → Moyen  
 """)
 
     else:
