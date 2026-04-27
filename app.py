@@ -477,11 +477,12 @@ Give:
             with st.spinner("AI kayفكر..."):
                 try:
                     response = client.chat.completions.create(
-                        model="mistralai/Mistral-7B-Instruct-v0.3",
-                        messages=messages,
-                        max_tokens=500,
-                        temperature=0.3
-                    )
+    model="meta-llama/Meta-Llama-3-8B-Instruct",
+    messages=messages,
+    max_tokens=500,
+    temperature=0.3
+)
+                    
 
                     reply = response.choices[0].message.content
                     st.markdown(reply)
