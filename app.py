@@ -478,26 +478,7 @@ with tab5:
 """)
     else:
         st.warning("Colonnes manquantes : Gravité / Occurrence / Détection.")
-st.markdown("### 📘 Explication des colonnes AMDEC")
 
-st.info("""
-**Gravité** : niveau d’impact du défaut sur le client, le produit ou la sécurité.  
-Plus la gravité est élevée, plus le défaut est critique.
-
-**Occurrence** : fréquence d’apparition du défaut.  
-Plus l’occurrence est élevée, plus le défaut se répète souvent.
-
-**Détection** : capacité à détecter le défaut avant livraison au client.  
-Plus la détection est élevée, plus le défaut est difficile à détecter.
-
-**RPN** : niveau de risque global.  
-RPN = Gravité × Occurrence × Détection.
-
-**Priorité** : classement automatique du risque :
-- 🔴 Critique : action immédiate requise
-- 🟡 Élevé : amélioration nécessaire
-- 🟢 Moyen : surveillance continue
-""")
 # =========================
 # TAB 6: IA HUGGING FACE
 # =========================
