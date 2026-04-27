@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
-import numpy as np
 
 # =========================
 # CONFIG
@@ -11,7 +10,8 @@ import numpy as np
 st.set_page_config(
     page_title="SpecSense AI",
     page_icon="🎯",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 # =========================
@@ -20,47 +20,59 @@ st.set_page_config(
 st.markdown("""
 <style>
 .stApp {
-    background: #0b1117;
+    background: #071016;
     color: white;
 }
 
 [data-testid="stSidebar"] {
-    background: #1f2330;
+    background: #151b25;
 }
 
 .big-title {
-    font-size: 42px;
-    font-weight: 800;
+    font-size: 36px;
+    font-weight: 900;
     color: white;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .sub-title {
     color: #aab2c0;
-    font-size: 16px;
-}
-
-.card {
-    background: #151c24;
-    padding: 22px;
-    border-radius: 18px;
-    border: 1px solid #293241;
+    font-size: 15px;
     margin-bottom: 18px;
 }
 
-.good {
-    color: #22c55e;
-    font-weight: bold;
+div[data-testid="stMetric"] {
+    background: #111827;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid #263241;
 }
 
-.warn {
-    color: #facc15;
-    font-weight: bold;
+div[data-testid="stMetricValue"] {
+    font-size: 28px;
 }
 
-.bad {
-    color: #ef4444;
-    font-weight: bold;
+.stTabs [data-baseweb="tab-list"] {
+    gap: 4px;
+    overflow-x: auto;
+}
+
+.stTabs [data-baseweb="tab"] {
+    font-size: 13px;
+    padding: 8px 10px;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .big-title {
+        font-size: 28px;
+    }
+    .sub-title {
+        font-size: 13px;
+    }
+    div[data-testid="stMetricValue"] {
+        font-size: 22px;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -73,22 +85,21 @@ G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7Ysfk
 @st.cache_data(ttl=60)
 def load_data():
     df = pd.read_csv(G_SHEET_URL)
-    df["Measurement"] = pd.to_numeric(df["Measurement"], errors="coerce")
-    df["USL"] = pd.to_numeric(df["USL"], errors="coerce")
-    df["LSL"] = pd.to_numeric(df["LSL"], errors="coerce")
-    df["Severity"] = pd.to_numeric(df["Severity"], errors="coerce")
-    df["Occurrence"] = pd.to_numeric(df["Occurrence"], errors="coerce")
-    df["Detection"] = pd.to_numeric(df["Detection"], errors="coerce")
+
+    for col in ["Measurement", "USL", "LSL", "Severity", "Occurrence", "Detection"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
     return df.dropna(subset=["Measurement"])
 
 try:
     df = load_data()
-except Exception as e:
-    st.error("🚨 Ma 9drnach n9raw Google Sheet. Check lien dyal CSV.")
+except Exception:
+    st.error("🚨 Impossible de lire Google Sheet. Vérifiez le lien CSV.")
     st.stop()
 
 # =========================
-# BASIC DATA
+# DATA
 # =========================
 msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", na=False)] if "Part_ID" in df.columns else pd.DataFrame()
 spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", na=False)] if "Part_ID" in df.columns else df
@@ -96,32 +107,6 @@ spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", na=False)] if "Part_
 total = len(df)
 msa_count = len(msa_data)
 spc_count = len(spc_data)
-
-# =========================
-# SIDEBAR
-# =========================
-with st.sidebar:
-    st.markdown("## 📊 Live KPIs")
-    st.markdown("---")
-    st.metric("📦 Total Mesures", total)
-    st.metric("📏 MSA Points", msa_count)
-    st.metric("📈 SPC Points", spc_count)
-    st.markdown("---")
-    st.markdown(f"🕐 Last Update: {datetime.now().strftime('%H:%M:%S')}")
-    st.markdown("---")
-    st.caption("© 2026 SpecSense AI")
-
-# =========================
-# HEADER
-# =========================
-st.markdown('<div class="big-title">🎯 SpecSense AI - Quality 4.0 Suite</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Smart Quality Dashboard | SPC • Cpk • MSA • Pareto • FMEA • AI Coach</div>', unsafe_allow_html=True)
-st.markdown("---")
-
-# =========================
-# TOP KPI CARDS
-# =========================
-k1, k2, k3, k4 = st.columns(4)
 
 mean_val = df["Measurement"].mean()
 std_val = df["Measurement"].std()
@@ -131,14 +116,41 @@ lsl = df["LSL"].iloc[0]
 cp = (usl - lsl) / (6 * std_val) if std_val > 0 else 0
 cpk = min((usl - mean_val) / (3 * std_val), (mean_val - lsl) / (3 * std_val)) if std_val > 0 else 0
 
+# =========================
+# SIDEBAR
+# =========================
+with st.sidebar:
+    st.markdown("## 📊 Indicateurs en temps réel")
+    st.markdown("---")
+    st.metric("📦 Nombre total de mesures", total)
+    st.metric("📏 Points MSA", msa_count)
+    st.metric("📈 Points SPC", spc_count)
+    st.markdown("---")
+    st.markdown(f"🕐 Dernière mise à jour : {datetime.now().strftime('%H:%M:%S')}")
+    st.markdown("---")
+    st.caption("© 2026 SpecSense AI")
+
+# =========================
+# HEADER
+# =========================
+st.markdown('<div class="big-title">🎯 SpecSense AI - Suite Qualité 4.0</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Tableau de bord qualité intelligent • SPC • Cpk • MSA • Pareto • AMDEC • IA</div>', unsafe_allow_html=True)
+st.markdown("---")
+
+# =========================
+# TOP KPIs
+# =========================
+k1, k2 = st.columns(2)
+k3, k4 = st.columns(2)
+
 with k1:
-    st.metric("Mean", f"{mean_val:.4f}")
+    st.metric("Moyenne", f"{mean_val:.4f}")
 with k2:
-    st.metric("Std Dev", f"{std_val:.6f}")
+    st.metric("Écart-type", f"{std_val:.6f}")
 with k3:
     st.metric("Cp", f"{cp:.2f}")
 with k4:
-    st.metric("Cpk", f"{cpk:.2f}", "OK ✅" if cpk >= 1.33 else "Risk ⚠️")
+    st.metric("Cpk", f"{cpk:.2f}", "Capable ✅" if cpk >= 1.33 else "Non capable ⚠️")
 
 st.markdown("---")
 
@@ -146,21 +158,20 @@ st.markdown("---")
 # TABS
 # =========================
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "📏 MSA Gage R&R",
-    "📊 SPC Control",
-    "📈 Capability Cpk",
-    "📋 Pareto Defects",
-    "🎯 FMEA RPN",
-    "🤖 AI Coach"
+    "MSA",
+    "SPC",
+    "Capabilité",
+    "Pareto",
+    "AMDEC",
+    "IA"
 ])
 
 # =========================
 # TAB 1: MSA
 # =========================
 with tab1:
-    st.subheader("📏 MSA Type 1")
-
-    st.write(f"MSA Data: {len(msa_data)} mesures")
+    st.subheader("📏 Analyse MSA Type 1")
+    st.write(f"Données MSA : {len(msa_data)} mesures")
 
     if len(msa_data) > 0:
         mean_msa = msa_data["Measurement"].mean()
@@ -172,23 +183,25 @@ with tab1:
         cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
         cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
 
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Reference", f"{ref:.4f}")
-        c2.metric("Tolerance", f"{tolerance:.4f}")
-        c3.metric("Cg", f"{cg:.2f}", "Pass ✅" if cg >= 1.33 else "Fail ❌")
-        c4.metric("Cgk", f"{cgk:.2f}", "Pass ✅" if cgk >= 1.33 else "Fail ❌")
+        c1, c2 = st.columns(2)
+        c3, c4 = st.columns(2)
+
+        c1.metric("Référence", f"{ref:.4f}")
+        c2.metric("Tolérance", f"{tolerance:.4f}")
+        c3.metric("Cg", f"{cg:.2f}", "Accepté ✅" if cg >= 1.33 else "Refusé ❌")
+        c4.metric("Cgk", f"{cgk:.2f}", "Accepté ✅" if cgk >= 1.33 else "Refusé ❌")
 
         fig = go.Figure()
         fig.add_trace(go.Scatter(
-            y=msa_data["Measurement"],
             x=list(range(1, len(msa_data) + 1)),
+            y=msa_data["Measurement"],
             mode="lines+markers",
-            name="MSA Measurements"
+            name="Mesures MSA"
         ))
-        fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Mean")
-        fig.add_hline(y=ref, line_dash="dot", annotation_text="Reference")
+        fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
+        fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
         fig.update_layout(
-            title="MSA Run Chart",
+            title="Carte MSA",
             template="plotly_dark",
             height=420
         )
@@ -196,13 +209,13 @@ with tab1:
 
         st.dataframe(msa_data, use_container_width=True)
     else:
-        st.warning("Ma kaynach data MSA. Khass Part_ID fih MSA.")
+        st.warning("Aucune donnée MSA disponible.")
 
 # =========================
 # TAB 2: SPC
 # =========================
 with tab2:
-    st.subheader("📊 SPC Control Chart")
+    st.subheader("📊 Carte de contrôle SPC")
 
     if len(spc_data) > 0:
         mean_spc = spc_data["Measurement"].mean()
@@ -212,17 +225,18 @@ with tab2:
         lcl = mean_spc - 3 * std_spc
 
         c1, c2, c3 = st.columns(3)
-        c1.metric("CL", f"{mean_spc:.4f}")
-        c2.metric("UCL", f"{ucl:.4f}")
-        c3.metric("LCL", f"{lcl:.4f}")
+        c1.metric("Ligne centrale", f"{mean_spc:.4f}")
+        c2.metric("Limite supérieure", f"{ucl:.4f}")
+        c3.metric("Limite inférieure", f"{lcl:.4f}")
 
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=list(range(1, len(spc_data) + 1)),
             y=spc_data["Measurement"],
             mode="lines+markers",
-            name="SPC Data"
+            name="Données SPC"
         ))
+
         fig.add_hline(y=mean_spc, line_dash="dash", annotation_text="CL")
         fig.add_hline(y=ucl, line_dash="dash", annotation_text="UCL")
         fig.add_hline(y=lcl, line_dash="dash", annotation_text="LCL")
@@ -230,7 +244,7 @@ with tab2:
         fig.add_hline(y=lsl, line_dash="dot", annotation_text="LSL")
 
         fig.update_layout(
-            title="SPC Individual Control Chart",
+            title="Carte de contrôle individuelle",
             template="plotly_dark",
             height=450
         )
@@ -243,205 +257,194 @@ with tab2:
         ]
 
         if len(out_spec) > 0:
-            st.error(f"⚠️ Kaynin {len(out_spec)} points kharjin men specification.")
+            st.error(f"⚠️ {len(out_spec)} points hors spécifications.")
             st.dataframe(out_spec, use_container_width=True)
         else:
-            st.success("✅ Kolchi dakhel specification.")
+            st.success("✅ Tous les points sont conformes.")
     else:
-        st.warning("Ma kaynach data SPC.")
+        st.warning("Aucune donnée SPC disponible.")
 
 # =========================
-# TAB 3: CAPABILITY
+# TAB 3: CAPABILITÉ
 # =========================
 with tab3:
-    st.subheader("📈 Process Capability")
+    st.subheader("📈 Capabilité du processus")
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2 = st.columns(2)
+    c3, c4 = st.columns(2)
+
     c1.metric("USL", f"{usl:.4f}")
     c2.metric("LSL", f"{lsl:.4f}")
     c3.metric("Cp", f"{cp:.2f}")
-    c4.metric("Cpk", f"{cpk:.2f}", "Capable ✅" if cpk >= 1.33 else "Not Capable ⚠️")
+    c4.metric("Cpk", f"{cpk:.2f}", "Capable ✅" if cpk >= 1.33 else "Non capable ⚠️")
 
     fig = px.histogram(
         df,
         x="Measurement",
         nbins=20,
-        title="Capability Histogram",
+        title="Histogramme de capabilité",
         template="plotly_dark"
     )
+
     fig.add_vline(x=usl, line_dash="dash", annotation_text="USL")
     fig.add_vline(x=lsl, line_dash="dash", annotation_text="LSL")
-    fig.add_vline(x=mean_val, line_dash="dot", annotation_text="Mean")
+    fig.add_vline(x=mean_val, line_dash="dot", annotation_text="Moyenne")
     fig.update_layout(height=450)
 
     st.plotly_chart(fig, use_container_width=True)
 
     if cpk >= 1.67:
-        st.success("🟢 Excellent process capability.")
+        st.success("🟢 Capabilité excellente.")
     elif cpk >= 1.33:
-        st.success("✅ Process capable.")
+        st.success("✅ Processus capable.")
     elif cpk >= 1.00:
-        st.warning("🟡 Process borderline. Khasso improvement.")
+        st.warning("🟡 Processus limite. Amélioration nécessaire.")
     else:
-        st.error("🔴 Process not capable.")
+        st.error("🔴 Processus non capable.")
 
 # =========================
 # TAB 4: PARETO
 # =========================
 with tab4:
-    st.subheader("📋 Pareto Defects")
+    st.subheader("📋 Analyse Pareto des défauts")
 
     defects = df[df["Defect_Type"].astype(str).str.upper() != "OK"]
 
     if len(defects) > 0:
         pareto = defects["Defect_Type"].value_counts().reset_index()
-        pareto.columns = ["Defect_Type", "Count"]
-        pareto["Cumulative"] = pareto["Count"].cumsum() / pareto["Count"].sum() * 100
+        pareto.columns = ["Type de défaut", "Nombre"]
+        pareto["Cumul %"] = pareto["Nombre"].cumsum() / pareto["Nombre"].sum() * 100
 
         fig = go.Figure()
         fig.add_trace(go.Bar(
-            x=pareto["Defect_Type"],
-            y=pareto["Count"],
-            name="Defects"
+            x=pareto["Type de défaut"],
+            y=pareto["Nombre"],
+            name="Défauts"
         ))
         fig.add_trace(go.Scatter(
-            x=pareto["Defect_Type"],
-            y=pareto["Cumulative"],
-            name="Cumulative %",
+            x=pareto["Type de défaut"],
+            y=pareto["Cumul %"],
+            name="Cumul %",
             yaxis="y2",
             mode="lines+markers"
         ))
+
         fig.update_layout(
-            title="Pareto Chart",
+            title="Diagramme Pareto",
             template="plotly_dark",
             height=450,
-            yaxis=dict(title="Count"),
-            yaxis2=dict(title="Cumulative %", overlaying="y", side="right", range=[0, 110])
+            yaxis=dict(title="Nombre"),
+            yaxis2=dict(title="Cumul %", overlaying="y", side="right", range=[0, 110])
         )
 
         st.plotly_chart(fig, use_container_width=True)
         st.dataframe(pareto, use_container_width=True)
     else:
-        st.success("✅ Ma kaynach defects. Kolchi OK.")
+        st.success("✅ Aucun défaut détecté.")
+
 # =========================
-# TAB 5: AUTO FMEA
+# TAB 5: AMDEC
 # =========================
 with tab5:
-    st.subheader("🎯 Auto FMEA Risk Analysis")
+    st.subheader("🎯 Analyse AMDEC automatique")
 
     if all(col in df.columns for col in ["Severity", "Occurrence", "Detection"]):
-
         fmea = df.copy()
-
-        # حساب RPN
         fmea["RPN"] = fmea["Severity"] * fmea["Occurrence"] * fmea["Detection"]
-
-        # ترتيب حسب الخطر
         fmea = fmea.sort_values(by="RPN", ascending=False)
 
-        # تحديد priority
         def get_priority(rpn):
             if rpn >= 150:
-                return "🔴 Critical"
+                return "🔴 Critique"
             elif rpn >= 100:
-                return "🟡 High"
+                return "🟡 Élevé"
             else:
-                return "🟢 Medium"
+                return "🟢 Moyen"
 
-        fmea["Priority"] = fmea["RPN"].apply(get_priority)
+        fmea["Priorité"] = fmea["RPN"].apply(get_priority)
 
-        # عرض KPIs
         c1, c2, c3 = st.columns(3)
-        c1.metric("Max RPN", int(fmea["RPN"].max()))
-        c2.metric("Avg RPN", f"{fmea['RPN'].mean():.1f}")
-        c3.metric("Critical Risks", len(fmea[fmea["RPN"] >= 150]))
+        c1.metric("RPN maximum", int(fmea["RPN"].max()))
+        c2.metric("RPN moyen", f"{fmea['RPN'].mean():.1f}")
+        c3.metric("Risques critiques", len(fmea[fmea["RPN"] >= 150]))
 
         st.markdown("---")
 
-        # عرض الجدول
-        st.dataframe(
-            fmea[[
-                "Part_ID",
-                "Defect_Type",
-                "Severity",
-                "Occurrence",
-                "Detection",
-                "RPN",
-                "Priority"
-            ]],
-            use_container_width=True
-        )
+        table_fmea = fmea[[
+            "Part_ID",
+            "Defect_Type",
+            "Severity",
+            "Occurrence",
+            "Detection",
+            "RPN",
+            "Priorité"
+        ]].rename(columns={
+            "Part_ID": "Référence pièce",
+            "Defect_Type": "Type de défaut",
+            "Severity": "Gravité",
+            "Occurrence": "Occurrence",
+            "Detection": "Détection"
+        })
 
+        st.dataframe(table_fmea, use_container_width=True)
+
+        top_risk = fmea.iloc[0]
+
+        st.markdown("## 🤖 Actions recommandées par l’IA")
+        st.write(f"Risque principal : **{top_risk['Defect_Type']}**")
+        st.write(f"RPN : **{top_risk['RPN']}**")
+
+        if top_risk["RPN"] >= 150:
+            st.error("🔴 Risque critique - Action immédiate requise")
+            st.markdown("""
+- Arrêter la production si nécessaire
+- Isoler les pièces non conformes
+- Vérifier l’état de la machine / du montage
+- Réaliser une analyse des causes racines avec les 5 Pourquoi
+- Lancer un plan d’actions correctives
+""")
+        elif top_risk["RPN"] >= 100:
+            st.warning("🟡 Risque élevé - Amélioration nécessaire")
+            st.markdown("""
+- Augmenter la fréquence de contrôle
+- Former les opérateurs
+- Renforcer la maîtrise du processus
+- Réduire la variation
+""")
+        else:
+            st.success("🟢 Risque acceptable")
+            st.markdown("""
+- Continuer la surveillance
+- Maintenir le processus standard
+""")
     else:
-        st.warning("❌ Columns Severity / Occurrence / Detection khasin")
+        st.warning("Colonnes manquantes : Gravité / Occurrence / Détection.")
+
 # =========================
-# AI ACTIONS FOR TOP RISKS
-# =========================
-
-top_risk = fmea.iloc[0]
-
-st.markdown("## 🤖 AI Recommended Actions")
-
-st.write(f"Top Risk: **{top_risk['Defect_Type']}**")
-st.write(f"RPN: **{top_risk['RPN']}**")
-
-if top_risk["RPN"] >= 150:
-    st.error("🔴 Critical Risk - Action Required Immediately")
-
-    st.markdown("""
-- Stop production (if necessary)
-- Isolate defective parts
-- Check machine / fixture condition
-- Perform root cause analysis (5 Why)
-- Launch corrective action plan
-""")
-
-elif top_risk["RPN"] >= 100:
-    st.warning("🟡 High Risk - Improve Process")
-
-    st.markdown("""
-- Increase inspection frequency
-- Train operators
-- Improve process control
-- Reduce variation
-""")
-
-else:
-    st.success("🟢 Risk Acceptable")
-
-    st.markdown("""
-- Continue monitoring
-- Maintain standard process
-""")
-# =========================
-# TAB 6: FREE AI (HUGGING FACE)
+# TAB 6: IA HUGGING FACE
 # =========================
 with tab6:
-    st.subheader("🤖 Free AI Quality Chat")
+    st.subheader("🤖 Assistant Qualité IA")
 
     from huggingface_hub import InferenceClient
 
     try:
         client = InferenceClient(token=st.secrets["HF_TOKEN"])
-    except:
-        st.error("🚨 HF_TOKEN ma kaynach")
+    except Exception:
+        st.error("🚨 HF_TOKEN manquant dans Streamlit Secrets.")
         st.stop()
 
-    # حفظ chat
     if "hf_messages" not in st.session_state:
         st.session_state.hf_messages = []
 
-    # reset
-    if st.button("🧹 Reset Chat"):
+    if st.button("🧹 Réinitialiser le chat"):
         st.session_state.hf_messages = []
 
-    # عرض history
     for msg in st.session_state.hf_messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # input
-    prompt = st.chat_input("💬 سول AI Quality Coach...")
+    prompt = st.chat_input("💬 Posez votre question qualité...")
 
     if prompt:
         st.session_state.hf_messages.append({"role": "user", "content": prompt})
@@ -449,23 +452,25 @@ with tab6:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # context
         context = f"""
-You are a senior automotive quality engineer.
+Tu es un ingénieur qualité automobile senior.
 
-Data:
-Mean = {mean_val:.4f}
-Std Dev = {std_val:.6f}
+Réponds uniquement en français avec un style simple, clair et professionnel.
+
+Données qualité :
+Moyenne = {mean_val:.4f}
+Écart-type = {std_val:.6f}
 Cp = {cp:.2f}
 Cpk = {cpk:.2f}
 USL = {usl}
 LSL = {lsl}
 
-Give:
-- Interpretation
-- Root cause
-- Actions
-- Priority
+Ta réponse doit contenir :
+- Interprétation
+- Causes possibles
+- Actions immédiates
+- Actions correctives
+- Priorité
 """
 
         messages = [
@@ -474,15 +479,14 @@ Give:
         ]
 
         with st.chat_message("assistant"):
-            with st.spinner("AI kayفكر..."):
+            with st.spinner("L’IA analyse la situation..."):
                 try:
                     response = client.chat.completions.create(
-    model="meta-llama/Meta-Llama-3-8B-Instruct",
-    messages=messages,
-    max_tokens=500,
-    temperature=0.3
-)
-                    
+                        model="meta-llama/Meta-Llama-3-8B-Instruct",
+                        messages=messages,
+                        max_tokens=500,
+                        temperature=0.3
+                    )
 
                     reply = response.choices[0].message.content
                     st.markdown(reply)
@@ -493,9 +497,10 @@ Give:
                     })
 
                 except Exception as e:
-                    st.error(f"❌ AI Error: {e}")
+                    st.error(f"❌ Erreur IA : {e}")
+
 # =========================
 # FOOTER
 # =========================
 st.markdown("---")
-st.caption("SpecSense AI V1.0 | Quality 4.0 | IATF 16949:2016 Inspired")
+st.caption("SpecSense AI V1.0 | Qualité 4.0 | Inspiré IATF 16949")
