@@ -400,7 +400,6 @@ with tab4:
         st.dataframe(pareto, use_container_width=True)
     else:
         st.success("✅ Aucun défaut détecté.")
-
 # =========================
 # TAB 5: AMDEC
 # =========================
@@ -414,7 +413,7 @@ with tab5:
         # Calcul RPN
         fmea["RPN"] = fmea["Severity"] * fmea["Occurrence"] * fmea["Detection"]
 
-        # Statut (رجعناه كيف كان)
+        # Statut
         def get_status(rpn):
             if rpn >= 150:
                 return "🔴 Critique"
@@ -434,7 +433,6 @@ with tab5:
 
         fmea["Statut"] = fmea["RPN"].apply(get_status)
         fmea["Action"] = fmea["RPN"].apply(get_action)
-
         fmea = fmea.sort_values(by="RPN", ascending=False)
 
         # KPIs
@@ -464,46 +462,48 @@ with tab5:
         })
 
         st.dataframe(table_fmea, use_container_width=True)
-st.markdown("### 📊 Grille de cotation AMDEC")
 
-g1, g2, g3 = st.columns(3)
+        # Grille AMDEC
+        st.markdown("### 📊 Grille de cotation AMDEC")
 
-with g1:
-    st.markdown("#### 🔴 Gravité")
-    st.dataframe(pd.DataFrame({
-        "Note": [1, 5, 8, 10],
-        "Signification": [
-            "Impact très faible",
-            "Impact moyen",
-            "Impact important",
-            "Danger critique / sécurité"
-        ]
-    }), use_container_width=True, hide_index=True)
+        g1, g2, g3 = st.columns(3)
 
-with g2:
-    st.markdown("#### 🔁 Occurrence")
-    st.dataframe(pd.DataFrame({
-        "Note": [1, 4, 7, 10],
-        "Signification": [
-            "Très rare",
-            "Occasionnel",
-            "Fréquent",
-            "Très fréquent"
-        ]
-    }), use_container_width=True, hide_index=True)
+        with g1:
+            st.markdown("#### 🔴 Gravité")
+            st.dataframe(pd.DataFrame({
+                "Note": [1, 5, 8, 10],
+                "Signification": [
+                    "Impact très faible",
+                    "Impact moyen",
+                    "Impact important",
+                    "Danger critique / sécurité"
+                ]
+            }), use_container_width=True, hide_index=True)
 
-with g3:
-    st.markdown("#### 👁 Détection")
-    st.dataframe(pd.DataFrame({
-        "Note": [1, 5, 8, 10],
-        "Signification": [
-            "Défaut facilement détectable",
-            "Détection moyenne",
-            "Difficile à détecter",
-            "Impossible à détecter"
-        ]
-    }), use_container_width=True, hide_index=True)
-        # règle
+        with g2:
+            st.markdown("#### 🔁 Occurrence")
+            st.dataframe(pd.DataFrame({
+                "Note": [1, 4, 7, 10],
+                "Signification": [
+                    "Très rare",
+                    "Occasionnel",
+                    "Fréquent",
+                    "Très fréquent"
+                ]
+            }), use_container_width=True, hide_index=True)
+
+        with g3:
+            st.markdown("#### 👁 Détection")
+            st.dataframe(pd.DataFrame({
+                "Note": [1, 5, 8, 10],
+                "Signification": [
+                    "Défaut facilement détectable",
+                    "Détection moyenne",
+                    "Difficile à détecter",
+                    "Impossible à détecter"
+                ]
+            }), use_container_width=True, hide_index=True)
+
         st.info("""
 Règle AMDEC utilisée :
 - 🔴 RPN ≥ 150 → Critique  
