@@ -323,47 +323,96 @@ with tab4:
         st.dataframe(pareto, use_container_width=True)
     else:
         st.success("✅ Ma kaynach defects. Kolchi OK.")
-
 # =========================
-# TAB 5: FMEA
+# TAB 5: AUTO FMEA
 # =========================
 with tab5:
-    st.subheader("🎯 FMEA RPN")
+    st.subheader("🎯 Auto FMEA Risk Analysis")
 
     if all(col in df.columns for col in ["Severity", "Occurrence", "Detection"]):
-        fmea = df.copy()
-        fmea["RPN"] = fmea["Severity"] * fmea["Occurrence"] * fmea["Detection"]
-        fmea = fmea.sort_values("RPN", ascending=False)
 
+        fmea = df.copy()
+
+        # حساب RPN
+        fmea["RPN"] = fmea["Severity"] * fmea["Occurrence"] * fmea["Detection"]
+
+        # ترتيب حسب الخطر
+        fmea = fmea.sort_values(by="RPN", ascending=False)
+
+        # تحديد priority
+        def get_priority(rpn):
+            if rpn >= 150:
+                return "🔴 Critical"
+            elif rpn >= 100:
+                return "🟡 High"
+            else:
+                return "🟢 Medium"
+
+        fmea["Priority"] = fmea["RPN"].apply(get_priority)
+
+        # عرض KPIs
         c1, c2, c3 = st.columns(3)
         c1.metric("Max RPN", int(fmea["RPN"].max()))
         c2.metric("Avg RPN", f"{fmea['RPN'].mean():.1f}")
-        c3.metric("High Risks", len(fmea[fmea["RPN"] >= 100]))
+        c3.metric("Critical Risks", len(fmea[fmea["RPN"] >= 150]))
 
-        fig = px.bar(
-            fmea.head(10),
-            x="Part_ID",
-            y="RPN",
-            color="Defect_Type",
-            title="Top RPN Risks",
-            template="plotly_dark"
-        )
-        fig.update_layout(height=450)
-        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("---")
 
+        # عرض الجدول
         st.dataframe(
-            fmea[["Date_Time", "Part_ID", "Machine", "Defect_Type", "Severity", "Occurrence", "Detection", "RPN"]],
+            fmea[[
+                "Part_ID",
+                "Defect_Type",
+                "Severity",
+                "Occurrence",
+                "Detection",
+                "RPN",
+                "Priority"
+            ]],
             use_container_width=True
         )
+
     else:
-        st.warning("Columns Severity / Occurrence / Detection khasin.")
+        st.warning("❌ Columns Severity / Occurrence / Detection khasin")
+# =========================
+# AI ACTIONS FOR TOP RISKS
+# =========================
 
-import ollama
+top_risk = fmea.iloc[0]
 
-response = ollama.chat(
-    model="llama3.2:3b",
-    messages=messages_for_ai
-)
+st.markdown("## 🤖 AI Recommended Actions")
+
+st.write(f"Top Risk: **{top_risk['Defect_Type']}**")
+st.write(f"RPN: **{top_risk['RPN']}**")
+
+if top_risk["RPN"] >= 150:
+    st.error("🔴 Critical Risk - Action Required Immediately")
+
+    st.markdown("""
+- Stop production (if necessary)
+- Isolate defective parts
+- Check machine / fixture condition
+- Perform root cause analysis (5 Why)
+- Launch corrective action plan
+""")
+
+elif top_risk["RPN"] >= 100:
+    st.warning("🟡 High Risk - Improve Process")
+
+    st.markdown("""
+- Increase inspection frequency
+- Train operators
+- Improve process control
+- Reduce variation
+""")
+
+else:
+    st.success("🟢 Risk Acceptable")
+
+    st.markdown("""
+- Continue monitoring
+- Maintain standard process
+""")
 # =========================
 # TAB 6: FREE AI (HUGGING FACE)
 # =========================
