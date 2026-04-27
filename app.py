@@ -43,16 +43,17 @@ st.markdown("""
 }
 
 div[data-testid="stMetric"] {
-    background: #111827;
+    background: linear-gradient(145deg, #0b1a2a, #0f2238);
     padding: 24px;
     border-radius: 22px;
-    border: 1px solid #334155;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    border: 1px solid rgba(59,130,246,0.2);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    transition: 0.3s;
 }
 
-div[data-testid="stMetricLabel"] {
-    font-size: 18px;
-    font-weight: 700;
+div[data-testid="stMetric"]:hover {
+    transform: translateY(-5px);
+    border: 1px solid #3b82f6;
 }
 
 div[data-testid="stMetricValue"] {
