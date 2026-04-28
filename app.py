@@ -23,7 +23,47 @@ st.markdown("""
     background: #071016 !important;
     color: #ffffff !important;
 }
+/* Force text visibility */
+div[data-testid="stMetric"] {
+    background: linear-gradient(145deg, #0b1a2a, #10243a) !important;
+    border: 1px solid rgba(59,130,246,0.45) !important;
+    color: #ffffff !important;
+}
 
+div[data-testid="stMetricLabel"] p {
+    color: #cbd5e1 !important;
+    opacity: 1 !important;
+    font-weight: 700 !important;
+}
+
+div[data-testid="stMetricValue"] {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    font-weight: 900 !important;
+}
+
+div[data-testid="stMetricDelta"] {
+    color: #22c55e !important;
+    opacity: 1 !important;
+}
+
+/* Text général */
+p, span, label, div {
+    color: inherit;
+}
+
+/* Mobile visibility */
+@media (max-width: 768px) {
+    div[data-testid="stMetricLabel"] p {
+        color: #e5e7eb !important;
+        font-size: 16px !important;
+    }
+
+    div[data-testid="stMetricValue"] {
+        color: #ffffff !important;
+        font-size: 34px !important;
+    }
+}
 [data-testid="stSidebar"] {
     background: #111827;
 }
