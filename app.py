@@ -20,8 +20,8 @@ st.set_page_config(
 st.markdown("""
 <style>
 .stApp {
-    background: linear-gradient(135deg, #071016 0%, #0f172a 100%);
-    color: white;
+    background: #071016 !important;
+    color: #ffffff !important;
 }
 
 [data-testid="stSidebar"] {
