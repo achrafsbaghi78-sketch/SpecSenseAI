@@ -23,47 +23,7 @@ st.markdown("""
     background: #071016 !important;
     color: #ffffff !important;
 }
-/* Force text visibility */
-div[data-testid="stMetric"] {
-    background: linear-gradient(145deg, #0b1a2a, #10243a) !important;
-    border: 1px solid rgba(59,130,246,0.45) !important;
-    color: #ffffff !important;
-}
 
-div[data-testid="stMetricLabel"] p {
-    color: #cbd5e1 !important;
-    opacity: 1 !important;
-    font-weight: 700 !important;
-}
-
-div[data-testid="stMetricValue"] {
-    color: #ffffff !important;
-    opacity: 1 !important;
-    font-weight: 900 !important;
-}
-
-div[data-testid="stMetricDelta"] {
-    color: #22c55e !important;
-    opacity: 1 !important;
-}
-
-/* Text général */
-p, span, label, div {
-    color: inherit;
-}
-
-/* Mobile visibility */
-@media (max-width: 768px) {
-    div[data-testid="stMetricLabel"] p {
-        color: #e5e7eb !important;
-        font-size: 16px !important;
-    }
-
-    div[data-testid="stMetricValue"] {
-        color: #ffffff !important;
-        font-size: 34px !important;
-    }
-}
 [data-testid="stSidebar"] {
     background: #111827;
 }
@@ -83,29 +43,29 @@ p, span, label, div {
 }
 
 div[data-testid="stMetric"] {
-    background: linear-gradient(145deg, #0b1a2a, #0f2238);
+    background: linear-gradient(145deg, #0b1a2a, #10243a) !important;
     padding: 24px;
     border-radius: 22px;
-    border: 1px solid rgba(59,130,246,0.25);
+    border: 1px solid rgba(59,130,246,0.45) !important;
+    color: #ffffff !important;
     box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
-div[data-testid="stMetricLabel"] {
-    font-size: 16px;
-    font-weight: 700;
+div[data-testid="stMetricLabel"] p {
+    color: #e5e7eb !important;
+    opacity: 1 !important;
+    font-weight: 700 !important;
 }
 
 div[data-testid="stMetricValue"] {
+    color: #ffffff !important;
+    opacity: 1 !important;
     font-size: 36px;
     font-weight: 900;
 }
 
 div[data-testid="stMetricDelta"] {
-    font-size: 15px;
-}
-
-h1, h2, h3 {
-    font-weight: 900;
+    opacity: 1 !important;
 }
 
 @media (max-width: 768px) {
@@ -124,11 +84,11 @@ h1, h2, h3 {
     }
 
     div[data-testid="stMetricValue"] {
-        font-size: 30px !important;
+        font-size: 34px !important;
     }
 
-    div[data-testid="stMetricLabel"] {
-        font-size: 14px !important;
+    div[data-testid="stMetricLabel"] p {
+        font-size: 16px !important;
     }
 
     section[data-testid="stSidebar"] {
@@ -153,23 +113,58 @@ G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7Ysfk
 def load_data():
     df = pd.read_csv(G_SHEET_URL)
 
-    for col in ["Measurement", "USL", "LSL", "Severity", "Occurrence", "Detection"]:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+    required_cols = [
+        "Date_Time", "Part_ID", "Operator", "Trial",
+        "Measurement", "USL", "LSL",
+        "Machine", "Defect_Type",
+        "Severity", "Occurrence", "Detection"
+    ]
 
-    return df.dropna(subset=["Measurement"])
+    missing_cols = [col for col in required_cols if col not in df.columns]
+    if missing_cols:
+        st.error(f"❌ Colonnes manquantes dans Google Sheet : {missing_cols}")
+        st.stop()
+
+    numeric_cols = ["Measurement", "USL", "LSL", "Severity", "Occurrence", "Detection"]
+
+    for col in numeric_cols:
+        df[col] = (
+            df[col]
+            .astype(str)
+            .str.replace(",", ".", regex=False)
+            .str.strip()
+        )
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    invalid_rows = df[df[numeric_cols].isna().any(axis=1)]
+
+    if len(invalid_rows) > 0:
+        st.error("❌ Erreur data : certaines valeurs numériques sont invalides.")
+        st.write("Lignes avec problème :")
+        st.dataframe(invalid_rows, use_container_width=True)
+        st.stop()
+
+    return df
 
 try:
     df = load_data()
-except Exception:
+except Exception as e:
     st.error("🚨 Impossible de lire Google Sheet. Vérifiez le lien CSV.")
+    st.write(e)
+    st.stop()
+
+if df.empty:
+    st.error("❌ Aucune donnée disponible après nettoyage.")
     st.stop()
 
 # =========================
 # DATA
 # =========================
-msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", na=False)] if "Part_ID" in df.columns else pd.DataFrame()
-spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", na=False)] if "Part_ID" in df.columns else df
+msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", na=False)]
+spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", na=False)]
+
+if len(spc_data) == 0:
+    spc_data = df.copy()
 
 total = len(df)
 msa_count = len(msa_data)
@@ -177,11 +172,15 @@ spc_count = len(spc_data)
 
 mean_val = df["Measurement"].mean()
 std_val = df["Measurement"].std()
-usl = df["USL"].iloc[0]
-lsl = df["LSL"].iloc[0]
+usl = df["USL"].dropna().iloc[0]
+lsl = df["LSL"].dropna().iloc[0]
 
-cp = (usl - lsl) / (6 * std_val) if std_val > 0 else 0
-cpk = min((usl - mean_val) / (3 * std_val), (mean_val - lsl) / (3 * std_val)) if std_val > 0 else 0
+if std_val > 0:
+    cp = (usl - lsl) / (6 * std_val)
+    cpk = min((usl - mean_val) / (3 * std_val), (mean_val - lsl) / (3 * std_val))
+else:
+    cp = 0
+    cpk = 0
 
 # =========================
 # SIDEBAR
@@ -205,7 +204,7 @@ st.markdown('<div class="sub-title">Tableau de bord qualité intelligent • SPC
 st.markdown("---")
 
 # =========================
-# TOP KPIs
+# TOP KPI
 # =========================
 k1, k2 = st.columns(2)
 k3, k4 = st.columns(2)
@@ -275,7 +274,7 @@ if page == "MSA":
         fig.update_layout(title="Carte MSA", template="plotly_dark", height=420)
         st.plotly_chart(fig, use_container_width=True)
 
-        st.dataframe(msa_data, use_container_width=True)
+        st.dataframe(msa_data, use_container_width=True, hide_index=True)
     else:
         st.warning("Aucune donnée MSA disponible.")
 
@@ -285,7 +284,7 @@ if page == "MSA":
 elif page == "SPC":
     st.subheader("📊 Carte de contrôle SPC")
 
-    if len(spc_data) > 0:
+    if len(spc_data) > 1:
         mean_spc = spc_data["Measurement"].mean()
         std_spc = spc_data["Measurement"].std()
 
@@ -326,11 +325,11 @@ elif page == "SPC":
 
         if len(out_spec) > 0:
             st.error(f"⚠️ {len(out_spec)} points hors spécifications.")
-            st.dataframe(out_spec, use_container_width=True)
+            st.dataframe(out_spec, use_container_width=True, hide_index=True)
         else:
             st.success("✅ Tous les points sont conformes.")
     else:
-        st.warning("Aucune donnée SPC disponible.")
+        st.warning("Pas assez de données SPC pour calculer les limites de contrôle.")
 
 # =========================
 # PAGE CAPABILITÉ
@@ -416,120 +415,116 @@ elif page == "Pareto":
 elif page == "AMDEC":
     st.subheader("🎯 Analyse AMDEC automatique")
 
-    if all(col in df.columns for col in ["Severity", "Occurrence", "Detection"]):
+    fmea = df.copy()
+    fmea["RPN"] = fmea["Severity"] * fmea["Occurrence"] * fmea["Detection"]
 
-        fmea = df.copy()
-        fmea["RPN"] = fmea["Severity"] * fmea["Occurrence"] * fmea["Detection"]
+    def get_status(rpn):
+        if rpn >= 150:
+            return "🔴 Critique"
+        elif rpn >= 100:
+            return "🟡 Élevé"
+        else:
+            return "🟢 Moyen"
 
-        def get_status(rpn):
-            if rpn >= 150:
-                return "🔴 Critique"
-            elif rpn >= 100:
-                return "🟡 Élevé"
-            else:
-                return "🟢 Moyen"
+    def get_action(rpn):
+        if rpn >= 150:
+            return "Action immédiate requise"
+        elif rpn >= 100:
+            return "Amélioration nécessaire"
+        else:
+            return "Risque acceptable"
 
-        def get_action(rpn):
-            if rpn >= 150:
-                return "Action immédiate requise"
-            elif rpn >= 100:
-                return "Amélioration nécessaire"
-            else:
-                return "Risque acceptable"
+    fmea["Statut"] = fmea["RPN"].apply(get_status)
+    fmea["Action"] = fmea["RPN"].apply(get_action)
+    fmea = fmea.sort_values(by="RPN", ascending=False)
 
-        fmea["Statut"] = fmea["RPN"].apply(get_status)
-        fmea["Action"] = fmea["RPN"].apply(get_action)
-        fmea = fmea.sort_values(by="RPN", ascending=False)
+    c1, c2, c3 = st.columns(3)
+    c1.metric("RPN maximum", int(fmea["RPN"].max()))
+    c2.metric("RPN moyen", f"{fmea['RPN'].mean():.1f}")
+    c3.metric("Risques critiques", len(fmea[fmea["RPN"] >= 150]))
 
-        c1, c2, c3 = st.columns(3)
-        c1.metric("RPN maximum", int(fmea["RPN"].max()))
-        c2.metric("RPN moyen", f"{fmea['RPN'].mean():.1f}")
-        c3.metric("Risques critiques", len(fmea[fmea["RPN"] >= 150]))
+    st.markdown("---")
 
-        st.markdown("---")
+    table_fmea = fmea[[
+        "Part_ID",
+        "Defect_Type",
+        "Severity",
+        "Occurrence",
+        "Detection",
+        "RPN",
+        "Statut",
+        "Action"
+    ]].rename(columns={
+        "Part_ID": "Référence pièce",
+        "Defect_Type": "Type de défaut",
+        "Severity": "Gravité",
+        "Occurrence": "Occurrence",
+        "Detection": "Détection"
+    })
 
-        table_fmea = fmea[[
-            "Part_ID",
-            "Defect_Type",
-            "Severity",
-            "Occurrence",
-            "Detection",
-            "RPN",
-            "Statut",
-            "Action"
-        ]].rename(columns={
-            "Part_ID": "Référence pièce",
-            "Defect_Type": "Type de défaut",
-            "Severity": "Gravité",
-            "Occurrence": "Occurrence",
-            "Detection": "Détection"
-        })
+    st.dataframe(table_fmea, use_container_width=True, hide_index=True)
 
-        st.dataframe(table_fmea, use_container_width=True, hide_index=True)
+    st.markdown("### 📊 Grille de cotation AMDEC")
 
-        st.markdown("### 📊 Grille de cotation AMDEC")
+    g1, g2, g3 = st.columns(3)
 
-        g1, g2, g3 = st.columns(3)
+    with g1:
+        st.markdown("#### 🔴 Gravité")
+        st.table(pd.DataFrame({
+            "Note": [1, 5, 8, 10],
+            "Impact": ["Faible", "Moyen", "Important", "Critique"]
+        }))
 
-        with g1:
-            st.markdown("#### 🔴 Gravité")
-            st.table(pd.DataFrame({
-                "Note": [1, 5, 8, 10],
-                "Impact": ["Faible", "Moyen", "Important", "Critique"]
-            }))
+    with g2:
+        st.markdown("#### 🔁 Occurrence")
+        st.table(pd.DataFrame({
+            "Note": [1, 4, 7, 10],
+            "Fréquence": ["Très rare", "Occasionnel", "Fréquent", "Très fréquent"]
+        }))
 
-        with g2:
-            st.markdown("#### 🔁 Occurrence")
-            st.table(pd.DataFrame({
-                "Note": [1, 4, 7, 10],
-                "Fréquence": ["Très rare", "Occasionnel", "Fréquent", "Très fréquent"]
-            }))
+    with g3:
+        st.markdown("#### 👁 Détection")
+        st.table(pd.DataFrame({
+            "Note": [1, 5, 8, 10],
+            "Détection": ["Facile", "Moyenne", "Difficile", "Impossible"]
+        }))
 
-        with g3:
-            st.markdown("#### 👁 Détection")
-            st.table(pd.DataFrame({
-                "Note": [1, 5, 8, 10],
-                "Détection": ["Facile", "Moyenne", "Difficile", "Impossible"]
-            }))
-
-        st.info("""
+    st.info("""
 Règle AMDEC utilisée :
 - 🔴 RPN ≥ 150 → Critique  
 - 🟡 100 ≤ RPN < 150 → Élevé  
 - 🟢 RPN < 100 → Moyen  
 """)
 
-        top_risk = fmea.iloc[0]
+    top_risk = fmea.iloc[0]
 
-        st.markdown("## 🤖 Actions recommandées")
-        st.write(f"Risque principal : **{top_risk['Defect_Type']}**")
-        st.write(f"RPN : **{top_risk['RPN']}**")
+    st.markdown("## 🤖 Actions recommandées")
+    st.write(f"Risque principal : **{top_risk['Defect_Type']}**")
+    st.write(f"RPN : **{top_risk['RPN']}**")
 
-        if top_risk["RPN"] >= 150:
-            st.error("🔴 Risque critique - Action immédiate requise")
-            st.markdown("""
+    if top_risk["RPN"] >= 150:
+        st.error("🔴 Risque critique - Action immédiate requise")
+        st.markdown("""
 - Arrêter la production si nécessaire
 - Isoler les pièces non conformes
 - Vérifier l’état de la machine / du montage
 - Réaliser une analyse des causes racines avec les 5 Pourquoi
 - Lancer un plan d’actions correctives
 """)
-        elif top_risk["RPN"] >= 100:
-            st.warning("🟡 Risque élevé - Amélioration nécessaire")
-            st.markdown("""
+    elif top_risk["RPN"] >= 100:
+        st.warning("🟡 Risque élevé - Amélioration nécessaire")
+        st.markdown("""
 - Augmenter la fréquence de contrôle
 - Former les opérateurs
 - Renforcer la maîtrise du processus
 - Réduire la variation
 """)
-        else:
-            st.success("🟢 Risque acceptable")
-            st.markdown("""
+    else:
+        st.success("🟢 Risque acceptable")
+        st.markdown("""
 - Continuer la surveillance
 - Maintenir le processus standard
 """)
-    else:
-        st.warning("Colonnes manquantes : Gravité / Occurrence / Détection.")
 
 # =========================
 # PAGE IA
