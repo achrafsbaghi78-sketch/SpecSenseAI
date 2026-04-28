@@ -46,91 +46,59 @@ div[data-testid="stMetric"] {
     background: linear-gradient(145deg, #0b1a2a, #0f2238);
     padding: 24px;
     border-radius: 22px;
-    border: 1px solid rgba(59,130,246,0.2);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    transition: 0.3s;
+    border: 1px solid rgba(59,130,246,0.25);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
-div[data-testid="stMetric"]:hover {
-    transform: translateY(-5px);
-    border: 1px solid #3b82f6;
+div[data-testid="stMetricLabel"] {
+    font-size: 16px;
+    font-weight: 700;
 }
 
 div[data-testid="stMetricValue"] {
-    font-size: 38px;
+    font-size: 36px;
     font-weight: 900;
 }
 
 div[data-testid="stMetricDelta"] {
-    font-size: 16px;
-}
-
-.stTabs [data-baseweb="tab-list"] {
-    gap: 10px;
-    overflow-x: auto;
-}
-
-.stTabs [data-baseweb="tab"] {
-    font-size: 18px;
-    font-weight: 700;
-    padding: 14px 18px;
-    white-space: nowrap;
+    font-size: 15px;
 }
 
 h1, h2, h3 {
     font-weight: 900;
 }
 
-h2 {
-    font-size: 32px !important;
-}
-
-h3 {
-    font-size: 26px !important;
-}
-
-.stDataFrame {
-    font-size: 16px;
-}
-
-button {
-    border-radius: 16px !important;
-    font-size: 17px !important;
-    font-weight: 700 !important;
-}
-
 @media (max-width: 768px) {
     .big-title {
-        font-size: 34px;
+        font-size: 34px !important;
     }
 
     .sub-title {
-        font-size: 16px;
+        font-size: 16px !important;
     }
 
     div[data-testid="stMetric"] {
-        padding: 18px;
-    }
-
-    div[data-testid="stMetricLabel"] {
-        font-size: 15px;
+        padding: 16px !important;
+        border-radius: 18px !important;
+        min-height: 90px;
     }
 
     div[data-testid="stMetricValue"] {
-        font-size: 30px;
+        font-size: 30px !important;
     }
 
-    .stTabs [data-baseweb="tab"] {
-        font-size: 15px;
-        padding: 10px 12px;
+    div[data-testid="stMetricLabel"] {
+        font-size: 14px !important;
     }
 
-    h2 {
-        font-size: 26px !important;
+    section[data-testid="stSidebar"] {
+        display: none;
     }
 
-    h3 {
-        font-size: 22px !important;
+    .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        padding-top: 2rem !important;
     }
 }
 </style>
@@ -211,24 +179,29 @@ with k3:
 with k4:
     st.metric("Cpk", f"{cpk:.2f}", "Capable ✅" if cpk >= 1.33 else "Non capable ⚠️")
 
+if cpk < 1:
+    st.error("🚨 Statut global : Processus non capable")
+elif cpk < 1.33:
+    st.warning("⚠️ Statut global : Amélioration nécessaire")
+else:
+    st.success("✅ Statut global : Processus capable")
+
 st.markdown("---")
 
 # =========================
-# TABS
+# NAVIGATION
 # =========================
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "MSA",
-    "SPC",
-    "Capabilité",
-    "Pareto",
-    "AMDEC",
-    "IA"
-])
+page = st.selectbox(
+    "Navigation",
+    ["MSA", "SPC", "Capabilité", "Pareto", "AMDEC", "IA"]
+)
+
+st.markdown("---")
 
 # =========================
-# TAB 1: MSA
+# PAGE MSA
 # =========================
-with tab1:
+if page == "MSA":
     st.subheader("📏 Analyse MSA Type 1")
     st.write(f"Données MSA : {len(msa_data)} mesures")
 
@@ -259,11 +232,7 @@ with tab1:
         ))
         fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
         fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
-        fig.update_layout(
-            title="Carte MSA",
-            template="plotly_dark",
-            height=420
-        )
+        fig.update_layout(title="Carte MSA", template="plotly_dark", height=420)
         st.plotly_chart(fig, use_container_width=True)
 
         st.dataframe(msa_data, use_container_width=True)
@@ -271,9 +240,9 @@ with tab1:
         st.warning("Aucune donnée MSA disponible.")
 
 # =========================
-# TAB 2: SPC
+# PAGE SPC
 # =========================
-with tab2:
+elif page == "SPC":
     st.subheader("📊 Carte de contrôle SPC")
 
     if len(spc_data) > 0:
@@ -324,9 +293,9 @@ with tab2:
         st.warning("Aucune donnée SPC disponible.")
 
 # =========================
-# TAB 3: CAPABILITÉ
+# PAGE CAPABILITÉ
 # =========================
-with tab3:
+elif page == "Capabilité":
     st.subheader("📈 Capabilité du processus")
 
     c1, c2 = st.columns(2)
@@ -362,9 +331,9 @@ with tab3:
         st.error("🔴 Processus non capable.")
 
 # =========================
-# TAB 4: PARETO
+# PAGE PARETO
 # =========================
-with tab4:
+elif page == "Pareto":
     st.subheader("📋 Analyse Pareto des défauts")
 
     defects = df[df["Defect_Type"].astype(str).str.upper() != "OK"]
@@ -397,23 +366,21 @@ with tab4:
         )
 
         st.plotly_chart(fig, use_container_width=True)
-        st.dataframe(pareto, use_container_width=True)
+        st.dataframe(pareto, use_container_width=True, hide_index=True)
     else:
         st.success("✅ Aucun défaut détecté.")
+
 # =========================
-# TAB 5: AMDEC
+# PAGE AMDEC
 # =========================
-with tab5:
+elif page == "AMDEC":
     st.subheader("🎯 Analyse AMDEC automatique")
 
     if all(col in df.columns for col in ["Severity", "Occurrence", "Detection"]):
 
         fmea = df.copy()
-
-        # Calcul RPN
         fmea["RPN"] = fmea["Severity"] * fmea["Occurrence"] * fmea["Detection"]
 
-        # Statut
         def get_status(rpn):
             if rpn >= 150:
                 return "🔴 Critique"
@@ -422,7 +389,6 @@ with tab5:
             else:
                 return "🟢 Moyen"
 
-        # Action
         def get_action(rpn):
             if rpn >= 150:
                 return "Action immédiate requise"
@@ -435,7 +401,6 @@ with tab5:
         fmea["Action"] = fmea["RPN"].apply(get_action)
         fmea = fmea.sort_values(by="RPN", ascending=False)
 
-        # KPIs
         c1, c2, c3 = st.columns(3)
         c1.metric("RPN maximum", int(fmea["RPN"].max()))
         c2.metric("RPN moyen", f"{fmea['RPN'].mean():.1f}")
@@ -443,7 +408,6 @@ with tab5:
 
         st.markdown("---")
 
-        # Tableau final
         table_fmea = fmea[[
             "Part_ID",
             "Defect_Type",
@@ -461,48 +425,32 @@ with tab5:
             "Detection": "Détection"
         })
 
-        st.dataframe(table_fmea, use_container_width=True)
+        st.dataframe(table_fmea, use_container_width=True, hide_index=True)
 
-        # Grille AMDEC
         st.markdown("### 📊 Grille de cotation AMDEC")
 
         g1, g2, g3 = st.columns(3)
 
         with g1:
             st.markdown("#### 🔴 Gravité")
-            st.dataframe(pd.DataFrame({
+            st.table(pd.DataFrame({
                 "Note": [1, 5, 8, 10],
-                "Signification": [
-                    "Impact très faible",
-                    "Impact moyen",
-                    "Impact important",
-                    "Danger critique / sécurité"
-                ]
-            }), use_container_width=True, hide_index=True)
+                "Impact": ["Faible", "Moyen", "Important", "Critique"]
+            }))
 
         with g2:
             st.markdown("#### 🔁 Occurrence")
-            st.dataframe(pd.DataFrame({
+            st.table(pd.DataFrame({
                 "Note": [1, 4, 7, 10],
-                "Signification": [
-                    "Très rare",
-                    "Occasionnel",
-                    "Fréquent",
-                    "Très fréquent"
-                ]
-            }), use_container_width=True, hide_index=True)
+                "Fréquence": ["Très rare", "Occasionnel", "Fréquent", "Très fréquent"]
+            }))
 
         with g3:
             st.markdown("#### 👁 Détection")
-            st.dataframe(pd.DataFrame({
+            st.table(pd.DataFrame({
                 "Note": [1, 5, 8, 10],
-                "Signification": [
-                    "Défaut facilement détectable",
-                    "Détection moyenne",
-                    "Difficile à détecter",
-                    "Impossible à détecter"
-                ]
-            }), use_container_width=True, hide_index=True)
+                "Détection": ["Facile", "Moyenne", "Difficile", "Impossible"]
+            }))
 
         st.info("""
 Règle AMDEC utilisée :
@@ -511,12 +459,42 @@ Règle AMDEC utilisée :
 - 🟢 RPN < 100 → Moyen  
 """)
 
+        top_risk = fmea.iloc[0]
+
+        st.markdown("## 🤖 Actions recommandées")
+        st.write(f"Risque principal : **{top_risk['Defect_Type']}**")
+        st.write(f"RPN : **{top_risk['RPN']}**")
+
+        if top_risk["RPN"] >= 150:
+            st.error("🔴 Risque critique - Action immédiate requise")
+            st.markdown("""
+- Arrêter la production si nécessaire
+- Isoler les pièces non conformes
+- Vérifier l’état de la machine / du montage
+- Réaliser une analyse des causes racines avec les 5 Pourquoi
+- Lancer un plan d’actions correctives
+""")
+        elif top_risk["RPN"] >= 100:
+            st.warning("🟡 Risque élevé - Amélioration nécessaire")
+            st.markdown("""
+- Augmenter la fréquence de contrôle
+- Former les opérateurs
+- Renforcer la maîtrise du processus
+- Réduire la variation
+""")
+        else:
+            st.success("🟢 Risque acceptable")
+            st.markdown("""
+- Continuer la surveillance
+- Maintenir le processus standard
+""")
     else:
         st.warning("Colonnes manquantes : Gravité / Occurrence / Détection.")
+
 # =========================
-# TAB 6: IA HUGGING FACE
+# PAGE IA
 # =========================
-with tab6:
+elif page == "IA":
     st.subheader("🤖 Assistant Qualité IA")
 
     from huggingface_hub import InferenceClient
