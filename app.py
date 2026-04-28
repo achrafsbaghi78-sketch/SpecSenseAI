@@ -275,6 +275,12 @@ if page == "MSA":
         st.plotly_chart(fig, use_container_width=True)
 
         st.dataframe(msa_data, use_container_width=True, hide_index=True)
+
+        st.markdown("### 🧠 Interprétation MSA")
+        if cg >= 1.33 and cgk >= 1.33:
+            st.success("✅ Le système de mesure est acceptable. Les mesures sont fiables.")
+        else:
+            st.error("❌ Le système de mesure n’est pas acceptable. Vérifier l’instrument, la méthode de mesure et la formation des opérateurs.")
     else:
         st.warning("Aucune donnée MSA disponible.")
 
@@ -328,6 +334,12 @@ elif page == "SPC":
             st.dataframe(out_spec, use_container_width=True, hide_index=True)
         else:
             st.success("✅ Tous les points sont conformes.")
+
+        st.markdown("### 🧠 Interprétation SPC")
+        if len(out_spec) > 0:
+            st.error("❌ Le processus présente des points hors spécifications. Une analyse immédiate est nécessaire.")
+        else:
+            st.success("✅ Le processus est sous contrôle par rapport aux spécifications.")
     else:
         st.warning("Pas assez de données SPC pour calculer les limites de contrôle.")
 
@@ -369,6 +381,14 @@ elif page == "Capabilité":
     else:
         st.error("🔴 Processus non capable.")
 
+    st.markdown("### 🧠 Interprétation Capabilité")
+    if cpk >= 1.33:
+        st.success("✅ Le processus est capable de respecter les tolérances client.")
+    elif cpk >= 1.00:
+        st.warning("⚠️ Le processus est limite. Il faut réduire la variation.")
+    else:
+        st.error("❌ Le processus n’est pas capable. Risque élevé de non-conformité.")
+
 # =========================
 # PAGE PARETO
 # =========================
@@ -406,6 +426,16 @@ elif page == "Pareto":
 
         st.plotly_chart(fig, use_container_width=True)
         st.dataframe(pareto, use_container_width=True, hide_index=True)
+
+        st.markdown("### 🧠 Interprétation Pareto")
+        top_defect = pareto.iloc[0]["Type de défaut"]
+        top_count = pareto.iloc[0]["Nombre"]
+
+        st.info(f"""
+Le défaut principal est **{top_defect}** avec **{top_count} occurrence(s)**.
+
+👉 Priorité : concentrer les actions qualité sur ce défaut en premier.
+""")
     else:
         st.success("✅ Aucun défaut détecté.")
 
@@ -463,6 +493,16 @@ elif page == "AMDEC":
     })
 
     st.dataframe(table_fmea, use_container_width=True, hide_index=True)
+
+    st.markdown("### 🧠 Interprétation AMDEC")
+    max_rpn = fmea["RPN"].max()
+
+    if max_rpn >= 150:
+        st.error("🔴 Risque critique détecté. Une action immédiate est obligatoire.")
+    elif max_rpn >= 100:
+        st.warning("🟡 Risque élevé. Une action d’amélioration est nécessaire.")
+    else:
+        st.success("🟢 Niveau de risque acceptable. Continuer la surveillance.")
 
     st.markdown("### 📊 Grille de cotation AMDEC")
 
@@ -531,6 +571,11 @@ Règle AMDEC utilisée :
 # =========================
 elif page == "IA":
     st.subheader("🤖 Assistant Qualité IA")
+
+    st.info("""
+Cet assistant interprète les résultats qualité et propose des actions.
+Vous pouvez poser des questions sur SPC, Cpk, MSA, Pareto ou AMDEC.
+""")
 
     from huggingface_hub import InferenceClient
 
