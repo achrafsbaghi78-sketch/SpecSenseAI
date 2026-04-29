@@ -6,7 +6,8 @@ import plotly.express as px
 from datetime import datetime
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-
+import requests
+import streamlit as st
 st.set_page_config(
     page_title="SpecSense AI",
     page_icon="🎯",
@@ -486,20 +487,28 @@ elif page_clean == "AMDEC":
         st.success("🟢 Niveau de risque acceptable.")
 
 elif page_clean == "IA":
-    st.subheader("🤖 Assistant Qualité IA")
+    st.subheader("🤖 Assistant Qualité IA (AI réel)")
 
-    st.info("Posez une question (ex: améliorer Cpk, actions SPC, réduire défauts...)")
-
-    user_question = st.text_area("Votre question qualité")
+    question = st.text_area("Pose ta question qualité")
 
     if st.button("Analyser"):
 
-        if user_question.strip() == "":
-            st.warning("Écrivez une question.")
+        if question.strip() == "":
+            st.warning("Écris une question")
         else:
-            question = user_question.lower()
+            with st.spinner("🤖 Analyse en cours..."):
 
-            st.markdown("### 🧠 Réponse IA")
+                prompt = f"""
+Tu es un expert en qualité industrielle.
+
+Réponds à cette question avec des actions concrètes :
+
+{question}
+"""
+
+                answer = ask_hf_ai(prompt)
+
+                st.success(answer)
 
             # =========================
             # CAS 1 : CPK / CAPABILITÉ
