@@ -5,7 +5,6 @@ import plotly.express as px
 from datetime import datetime
 
 st.image("file_Design sans titre.png", width=180)
-
 # =========================
 # CONFIG
 # =========================
