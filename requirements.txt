@@ -3,5 +3,5 @@ pandas
 plotly
 xgboost
 scikit-learn
-reportlab
+reportlab==4.0.4
 requests
