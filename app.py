@@ -3,7 +3,9 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
-
+st.image("logo.png", width=120)
+st.title("SpecSense AI")
+st.caption("SUITE QUALITÉ 4.0 • MESURER • ANALYSER • AMÉLIORER")
 # =========================
 # CONFIG
 # =========================
