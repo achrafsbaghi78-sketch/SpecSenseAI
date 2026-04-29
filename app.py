@@ -5,7 +5,8 @@ import plotly.express as px
 from datetime import datetime
 st.image("file_0000000058e87243adb84e2c339e7beb.png", width=180)
 st.title("SpecSense AI")
-st.caption("SUITE QUALITÉ 4.0 • MESURER • ANALYSER • AMÉLIORER")
+st.caption("SUITE QUALITÉ 4.0 
+• MESURER • ANALYSER • AMÉLIORER")
 # =========================
 # CONFIG
 # =========================
