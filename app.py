@@ -487,15 +487,151 @@ elif page_clean == "AMDEC":
 
 elif page_clean == "IA":
     st.subheader("🤖 Assistant Qualité IA")
-    st.info("Posez des questions sur SPC, Cpk, MSA, Pareto ou AMDEC.")
+
+    st.info("Posez une question (ex: améliorer Cpk, actions SPC, réduire défauts...)")
 
     user_question = st.text_area("Votre question qualité")
 
     if st.button("Analyser"):
+
         if user_question.strip() == "":
             st.warning("Écrivez une question.")
         else:
-            st.success("Module IA prêt. Vous pouvez connecter Hugging Face ici.")
+            question = user_question.lower()
+
+            st.markdown("### 🧠 Réponse IA")
+
+            # =========================
+            # CAS 1 : CPK / CAPABILITÉ
+            # =========================
+            if "cpk" in question or "capabilite" in question:
+                if cpk < 1:
+                    st.error("""
+🔴 Processus non capable
+
+✔ Actions recommandées :
+- Réduire la variabilité (machine, opérateur)
+- Vérifier étalonnage instrument
+- Analyser causes racines (5 Why / Ishikawa)
+- Améliorer réglage machine
+- Former opérateurs
+                    """)
+                elif cpk < 1.33:
+                    st.warning("""
+🟡 Processus limite
+
+✔ Actions :
+- Stabiliser le process
+- Réduire variation
+- Surveillance SPC renforcée
+                    """)
+                else:
+                    st.success("""
+🟢 Processus capable
+
+✔ Actions :
+- Maintenir conditions actuelles
+- Standardiser process
+                    """)
+
+            # =========================
+            # CAS 2 : SPC
+            # =========================
+            elif "spc" in question:
+                out_spec = spc_data[
+                    (spc_data["Measurement"] > usl) |
+                    (spc_data["Measurement"] < lsl)
+                ]
+
+                if len(out_spec) > 0:
+                    st.error(f"""
+🔴 {len(out_spec)} points hors contrôle
+
+✔ Actions :
+- Arrêter la production
+- Identifier cause spéciale
+- Corriger immédiatement
+- Vérifier machine et matière
+                    """)
+                else:
+                    st.success("""
+🟢 Process stable
+
+✔ Actions :
+- Continuer surveillance
+- Optimisation possible
+                    """)
+
+            # =========================
+            # CAS 3 : MSA
+            # =========================
+            elif "msa" in question:
+                st.info("""
+✔ Actions MSA :
+- Vérifier répétabilité
+- Vérifier reproductibilité
+- Calibrer instrument
+- Faire étude Gage R&R
+                """)
+
+            # =========================
+            # CAS 4 : PARETO / DEFAUT
+            # =========================
+            elif "defaut" in question or "pareto" in question:
+                defects = df[df["Defect_Type"].str.upper() != "OK"]
+
+                if len(defects) > 0:
+                    top_defect = defects["Defect_Type"].value_counts().idxmax()
+
+                    st.warning(f"""
+🎯 Défaut principal : {top_defect}
+
+✔ Actions :
+- Traiter cause racine
+- Mettre plan d’action
+- Suivi quotidien
+- Standardisation
+                    """)
+                else:
+                    st.success("Aucun défaut détecté 👍")
+
+            # =========================
+            # CAS 5 : AMDEC
+            # =========================
+            elif "amdec" in question or "rpn" in question:
+                max_rpn = (df["Severity"] * df["Occurrence"] * df["Detection"]).max()
+
+                if max_rpn >= 150:
+                    st.error("""
+🔴 Risque critique
+
+✔ Actions :
+- Action immédiate
+- Plan correctif
+- Réduction Occurrence
+                    """)
+                elif max_rpn >= 100:
+                    st.warning("""
+🟡 Risque élevé
+
+✔ Actions :
+- Amélioration process
+- Surveillance accrue
+                    """)
+                else:
+                    st.success("🟢 Risque acceptable")
+
+            # =========================
+            # CAS PAR DÉFAUT
+            # =========================
+            else:
+                st.info("""
+🤖 Exemple de questions :
+- Donner actions Cpk
+- Améliorer SPC
+- Analyse défaut
+- Actions AMDEC
+                """)
 
 st.markdown("---")
 st.subheader("📄 Rapport Qualité")
