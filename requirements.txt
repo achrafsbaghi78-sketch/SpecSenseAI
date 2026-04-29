@@ -1,7 +1,7 @@
 streamlit
 pandas
+numpy
 plotly
-xgboost
-scikit-learn
-reportlab==4.0.4
 requests
+reportlab
+huggingface_hub
