@@ -1,4 +1,5 @@
 import os
+import requests
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -6,8 +7,10 @@ import plotly.express as px
 from datetime import datetime
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-import requests
-import streamlit as st
+
+# =========================
+# CONFIG
+# =========================
 st.set_page_config(
     page_title="SpecSense AI",
     page_icon="🎯",
@@ -15,6 +18,42 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# =========================
+# AI FUNCTION
+# =========================
+def ask_hf_ai(question):
+    API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+
+    if "HUGGINGFACE_TOKEN" not in st.secrets:
+        return "❌ HUGGINGFACE_TOKEN manquant dans Streamlit Secrets."
+
+    headers = {
+        "Authorization": f"Bearer {st.secrets['HUGGINGFACE_TOKEN']}"
+    }
+
+    payload = {
+        "inputs": question
+    }
+
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+
+        if response.status_code != 200:
+            return f"❌ Erreur IA : {response.text}"
+
+        result = response.json()
+
+        if isinstance(result, list) and len(result) > 0 and "generated_text" in result[0]:
+            return result[0]["generated_text"]
+
+        return str(result)
+
+    except Exception as e:
+        return f"❌ Erreur connexion IA : {e}"
+
+# =========================
+# STYLE
+# =========================
 st.markdown("""
 <style>
 .stApp {
@@ -72,11 +111,15 @@ div[role="radiogroup"] label:hover {
 </style>
 """, unsafe_allow_html=True)
 
+# =========================
+# GOOGLE SHEET
+# =========================
 G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90/export?format=csv&gid=0"
 
 @st.cache_data(ttl=60)
 def load_data():
     df = pd.read_csv(G_SHEET_URL)
+    df.columns = df.columns.str.strip()
 
     required_cols = [
         "Date_Time", "Part_ID", "Operator", "Trial",
@@ -97,6 +140,7 @@ def load_data():
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     invalid_rows = df[df[numeric_cols].isna().any(axis=1)]
+
     if len(invalid_rows) > 0:
         st.error("❌ Erreur data : certaines valeurs numériques sont invalides.")
         st.dataframe(invalid_rows, use_container_width=True)
@@ -115,6 +159,9 @@ if df.empty:
     st.error("❌ Aucune donnée disponible.")
     st.stop()
 
+# =========================
+# CALCULS
+# =========================
 msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", na=False)]
 spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", na=False)]
 
@@ -140,6 +187,9 @@ else:
     cp = 0
     cpk = 0
 
+# =========================
+# PDF
+# =========================
 def generate_pdf_report():
     doc_path = "rapport_qualite_specsense.pdf"
     styles = getSampleStyleSheet()
@@ -147,16 +197,19 @@ def generate_pdf_report():
 
     story.append(Paragraph("Rapport Qualité - SpecSense AI", styles["Title"]))
     story.append(Spacer(1, 12))
+
     story.append(Paragraph("Résumé global", styles["Heading2"]))
     story.append(Paragraph(f"Nombre total de mesures : {total}", styles["BodyText"]))
     story.append(Paragraph(f"Points MSA : {msa_count}", styles["BodyText"]))
     story.append(Paragraph(f"Points SPC : {spc_count}", styles["BodyText"]))
+
     story.append(Spacer(1, 12))
     story.append(Paragraph("Indicateurs processus", styles["Heading2"]))
     story.append(Paragraph(f"Moyenne : {mean_val:.4f}", styles["BodyText"]))
     story.append(Paragraph(f"Écart-type : {std_val:.6f}", styles["BodyText"]))
     story.append(Paragraph(f"Cp : {cp:.2f}", styles["BodyText"]))
     story.append(Paragraph(f"Cpk : {cpk:.2f}", styles["BodyText"]))
+
     story.append(Spacer(1, 12))
     story.append(Paragraph("Conclusion", styles["Heading2"]))
 
@@ -171,8 +224,12 @@ def generate_pdf_report():
 
     doc = SimpleDocTemplate(doc_path)
     doc.build(story)
+
     return doc_path
 
+# =========================
+# SIDEBAR
+# =========================
 with st.sidebar:
     if os.path.exists("logo.png"):
         st.image("logo.png", width=170)
@@ -209,10 +266,15 @@ with st.sidebar:
 
 page_clean = page.split(" ", 1)[1]
 
+# =========================
+# HEADER
+# =========================
 h1, h2 = st.columns([1, 5])
+
 with h1:
     if os.path.exists("logo.png"):
         st.image("logo.png", width=140)
+
 with h2:
     st.markdown("""
     <h1 style="margin:0; font-size:44px; font-weight:900;">Tableau de bord</h1>
@@ -223,7 +285,11 @@ with h2:
 
 st.markdown("---")
 
+# =========================
+# KPI GLOBAL
+# =========================
 k1, k2, k3, k4 = st.columns(4)
+
 k1.metric("Moyenne", f"{mean_val:.4f}")
 k2.metric("Écart-type", f"{std_val:.6f}")
 k3.metric("Cp", f"{cp:.2f}")
@@ -238,6 +304,9 @@ else:
 
 st.markdown("---")
 
+# =========================
+# TABLEAU DE BORD
+# =========================
 if page_clean == "Tableau de bord":
     st.subheader("🏠 Vue générale")
 
@@ -245,6 +314,7 @@ if page_clean == "Tableau de bord":
 
     with col_a:
         st.markdown("### 📈 Évolution des mesures")
+
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=list(range(1, len(df) + 1)),
@@ -252,14 +322,17 @@ if page_clean == "Tableau de bord":
             mode="lines+markers",
             name="Mesures"
         ))
+
         fig.add_hline(y=mean_val, line_dash="dash", annotation_text="Moyenne")
         fig.add_hline(y=usl, line_dash="dot", annotation_text="USL")
         fig.add_hline(y=lsl, line_dash="dot", annotation_text="LSL")
         fig.update_layout(template="plotly_dark", height=420)
+
         st.plotly_chart(fig, use_container_width=True)
 
     with col_b:
         st.markdown("### 🎯 Synthèse capabilité")
+
         fig = px.histogram(
             df,
             x="Measurement",
@@ -267,12 +340,15 @@ if page_clean == "Tableau de bord":
             template="plotly_dark",
             title="Distribution des mesures"
         )
+
         fig.add_vline(x=usl, line_dash="dash", annotation_text="USL")
         fig.add_vline(x=lsl, line_dash="dash", annotation_text="LSL")
         fig.add_vline(x=mean_val, line_dash="dot", annotation_text="Moyenne")
+
         st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("### 🧠 Synthèse")
+
     if cpk >= 1.33:
         st.success("✅ Le processus est capable et stable.")
     elif cpk >= 1:
@@ -280,6 +356,9 @@ if page_clean == "Tableau de bord":
     else:
         st.error("❌ Le processus n’est pas capable. Actions correctives requises.")
 
+# =========================
+# MSA
+# =========================
 elif page_clean == "MSA":
     st.subheader("📏 Analyse MSA Type 1")
 
@@ -305,6 +384,7 @@ elif page_clean == "MSA":
             mode="lines+markers",
             name="Mesures MSA"
         ))
+
         fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
         fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
         fig.update_layout(title="Carte MSA", template="plotly_dark", height=430)
@@ -313,6 +393,7 @@ elif page_clean == "MSA":
         st.dataframe(msa_data, use_container_width=True, hide_index=True)
 
         st.markdown("### 🧠 Interprétation MSA")
+
         if cg >= 1.33 and cgk >= 1.33:
             st.success("✅ Le système de mesure est acceptable.")
         else:
@@ -320,6 +401,9 @@ elif page_clean == "MSA":
     else:
         st.warning("Aucune donnée MSA disponible.")
 
+# =========================
+# SPC
+# =========================
 elif page_clean == "SPC":
     st.subheader("📉 Carte de contrôle SPC")
 
@@ -357,12 +441,16 @@ elif page_clean == "SPC":
     ]
 
     st.markdown("### 🧠 Interprétation SPC")
+
     if len(out_spec) > 0:
         st.error(f"❌ {len(out_spec)} point(s) hors spécifications.")
         st.dataframe(out_spec, use_container_width=True, hide_index=True)
     else:
         st.success("✅ Le processus est sous contrôle par rapport aux spécifications.")
 
+# =========================
+# CAPABILITÉ
+# =========================
 elif page_clean == "Capabilité":
     st.subheader("🎯 Capabilité du processus")
 
@@ -387,6 +475,7 @@ elif page_clean == "Capabilité":
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("### 🧠 Interprétation Capabilité")
+
     if cpk >= 1.33:
         st.success("✅ Le processus est capable de respecter les tolérances client.")
     elif cpk >= 1:
@@ -394,6 +483,9 @@ elif page_clean == "Capabilité":
     else:
         st.error("❌ Processus non capable. Actions correctives nécessaires.")
 
+# =========================
+# PARETO
+# =========================
 elif page_clean == "Pareto":
     st.subheader("📊 Analyse Pareto des défauts")
 
@@ -405,7 +497,13 @@ elif page_clean == "Pareto":
         pareto["Cumul %"] = pareto["Nombre"].cumsum() / pareto["Nombre"].sum() * 100
 
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=pareto["Type de défaut"], y=pareto["Nombre"], name="Défauts"))
+
+        fig.add_trace(go.Bar(
+            x=pareto["Type de défaut"],
+            y=pareto["Nombre"],
+            name="Défauts"
+        ))
+
         fig.add_trace(go.Scatter(
             x=pareto["Type de défaut"],
             y=pareto["Cumul %"],
@@ -433,6 +531,9 @@ elif page_clean == "Pareto":
     else:
         st.success("✅ Aucun défaut détecté.")
 
+# =========================
+# AMDEC
+# =========================
 elif page_clean == "AMDEC":
     st.subheader("⚠️ Analyse AMDEC automatique")
 
@@ -479,6 +580,7 @@ elif page_clean == "AMDEC":
     max_rpn = fmea["RPN"].max()
 
     st.markdown("### 🧠 Interprétation AMDEC")
+
     if max_rpn >= 150:
         st.error("🔴 Risque critique détecté. Action immédiate obligatoire.")
     elif max_rpn >= 100:
@@ -486,8 +588,11 @@ elif page_clean == "AMDEC":
     else:
         st.success("🟢 Niveau de risque acceptable.")
 
+# =========================
+# IA
+# =========================
 elif page_clean == "IA":
-    st.subheader("🤖 Assistant Qualité IA (AI réel)")
+    st.subheader("🤖 Assistant Qualité IA")
 
     question = st.text_area("Pose ta question qualité")
 
@@ -496,152 +601,84 @@ elif page_clean == "IA":
         if question.strip() == "":
             st.warning("Écris une question")
         else:
-            with st.spinner("🤖 Analyse en cours..."):
+            question_lower = question.lower()
 
-                prompt = f"""
-Tu es un expert en qualité industrielle.
+            prompt = f"""
+Tu es un expert en qualité industrielle automobile.
 
-Réponds à cette question avec des actions concrètes :
+Réponds en français simple et professionnel.
 
+Données actuelles :
+- Moyenne = {mean_val:.4f}
+- Écart-type = {std_val:.6f}
+- Cp = {cp:.2f}
+- Cpk = {cpk:.2f}
+- USL = {usl}
+- LSL = {lsl}
+- Nombre de mesures = {total}
+
+Question utilisateur :
 {question}
+
+Donne :
+1. Interprétation
+2. Causes possibles
+3. Actions immédiates
+4. Actions correctives
 """
 
+            with st.spinner("🤖 Analyse en cours..."):
                 answer = ask_hf_ai(prompt)
 
-                st.success(answer)
+            st.markdown("### 🧠 Réponse IA")
+            st.success(answer)
 
-            # =========================
-            # CAS 1 : CPK / CAPABILITÉ
-            # =========================
-            if "cpk" in question or "capabilite" in question:
+            st.markdown("### 📌 Recommandation système")
+
+            if "cpk" in question_lower or "capabilite" in question_lower:
                 if cpk < 1:
-                    st.error("""
-🔴 Processus non capable
-
-✔ Actions recommandées :
-- Réduire la variabilité (machine, opérateur)
-- Vérifier étalonnage instrument
-- Analyser causes racines (5 Why / Ishikawa)
-- Améliorer réglage machine
-- Former opérateurs
-                    """)
+                    st.error("🔴 Cpk < 1 : processus non capable. Réduire la variation et recentrer le processus.")
                 elif cpk < 1.33:
-                    st.warning("""
-🟡 Processus limite
-
-✔ Actions :
-- Stabiliser le process
-- Réduire variation
-- Surveillance SPC renforcée
-                    """)
+                    st.warning("🟡 Cpk limite : renforcer la surveillance SPC et réduire la variabilité.")
                 else:
-                    st.success("""
-🟢 Processus capable
+                    st.success("🟢 Cpk acceptable : maintenir les standards actuels.")
 
-✔ Actions :
-- Maintenir conditions actuelles
-- Standardiser process
-                    """)
-
-            # =========================
-            # CAS 2 : SPC
-            # =========================
-            elif "spc" in question:
+            elif "spc" in question_lower:
                 out_spec = spc_data[
                     (spc_data["Measurement"] > usl) |
                     (spc_data["Measurement"] < lsl)
                 ]
 
                 if len(out_spec) > 0:
-                    st.error(f"""
-🔴 {len(out_spec)} points hors contrôle
-
-✔ Actions :
-- Arrêter la production
-- Identifier cause spéciale
-- Corriger immédiatement
-- Vérifier machine et matière
-                    """)
+                    st.error(f"🔴 {len(out_spec)} point(s) hors spécifications.")
                 else:
-                    st.success("""
-🟢 Process stable
+                    st.success("🟢 Aucun point hors spécifications.")
 
-✔ Actions :
-- Continuer surveillance
-- Optimisation possible
-                    """)
+            elif "msa" in question_lower:
+                st.info("✔ Vérifier répétabilité, reproductibilité, étalonnage et méthode de mesure.")
 
-            # =========================
-            # CAS 3 : MSA
-            # =========================
-            elif "msa" in question:
-                st.info("""
-✔ Actions MSA :
-- Vérifier répétabilité
-- Vérifier reproductibilité
-- Calibrer instrument
-- Faire étude Gage R&R
-                """)
-
-            # =========================
-            # CAS 4 : PARETO / DEFAUT
-            # =========================
-            elif "defaut" in question or "pareto" in question:
-                defects = df[df["Defect_Type"].str.upper() != "OK"]
+            elif "defaut" in question_lower or "pareto" in question_lower:
+                defects = df[df["Defect_Type"].astype(str).str.upper() != "OK"]
 
                 if len(defects) > 0:
                     top_defect = defects["Defect_Type"].value_counts().idxmax()
-
-                    st.warning(f"""
-🎯 Défaut principal : {top_defect}
-
-✔ Actions :
-- Traiter cause racine
-- Mettre plan d’action
-- Suivi quotidien
-- Standardisation
-                    """)
+                    st.warning(f"🎯 Défaut principal : {top_defect}")
                 else:
-                    st.success("Aucun défaut détecté 👍")
+                    st.success("Aucun défaut détecté.")
 
-            # =========================
-            # CAS 5 : AMDEC
-            # =========================
-            elif "amdec" in question or "rpn" in question:
+            elif "amdec" in question_lower or "rpn" in question_lower:
                 max_rpn = (df["Severity"] * df["Occurrence"] * df["Detection"]).max()
 
                 if max_rpn >= 150:
-                    st.error("""
-🔴 Risque critique
-
-✔ Actions :
-- Action immédiate
-- Plan correctif
-- Réduction Occurrence
-                    """)
+                    st.error("🔴 Risque critique AMDEC : action immédiate requise.")
                 elif max_rpn >= 100:
-                    st.warning("""
-🟡 Risque élevé
-
-✔ Actions :
-- Amélioration process
-- Surveillance accrue
-                    """)
+                    st.warning("🟡 Risque élevé AMDEC : amélioration nécessaire.")
                 else:
-                    st.success("🟢 Risque acceptable")
+                    st.success("🟢 Risque AMDEC acceptable.")
 
-            # =========================
-            # CAS PAR DÉFAUT
-            # =========================
-            else:
-                st.info("""
-🤖 Exemple de questions :
-- Donner actions Cpk
-- Améliorer SPC
-- Analyse défaut
-- Actions AMDEC
-                """)
-
+# =========================
+# RAPPORT PDF
+# =========================
 st.markdown("---")
 st.subheader("📄 Rapport Qualité")
 
