@@ -1,12 +1,12 @@
+import os
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
-# =========================
-# CONFIG
-# =========================
 st.set_page_config(
     page_title="SpecSense AI",
     page_icon="🎯",
@@ -14,27 +14,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# =========================
-# STYLE PRO
-# =========================
 st.markdown("""
 <style>
 .stApp {
     background: linear-gradient(135deg, #020617 0%, #07111f 45%, #0b1220 100%);
     color: white;
 }
-
 .block-container {
     padding-top: 2rem;
     padding-left: 3rem;
     padding-right: 3rem;
 }
-
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #020617, #0b1220);
+    background: linear-gradient(180deg, #020617 0%, #07111f 100%) !important;
     border-right: 1px solid rgba(255,255,255,0.08);
 }
-
 div[data-testid="stMetric"] {
     background: radial-gradient(circle at top left, rgba(0,212,255,0.18), rgba(15,23,42,0.92));
     border: 1px solid rgba(0,212,255,0.45);
@@ -42,62 +36,34 @@ div[data-testid="stMetric"] {
     padding: 25px;
     box-shadow: 0 18px 40px rgba(0,0,0,0.35);
 }
-
 div[data-testid="stMetricLabel"] p {
     color: #cbd5e1 !important;
     font-weight: 700 !important;
     font-size: 16px !important;
 }
-
 div[data-testid="stMetricValue"] {
     color: #ffffff !important;
     font-size: 38px !important;
     font-weight: 900 !important;
 }
-
-.hero {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-    margin-bottom: 25px;
+div[role="radiogroup"] label {
+    background: rgba(15,23,42,0.65);
+    border: 1px solid rgba(148,163,184,0.12);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    transition: all 0.25s ease;
 }
-
-.hero img {
-    width: 150px;
+div[role="radiogroup"] label:hover {
+    background: rgba(0,212,255,0.13);
+    border-color: rgba(0,212,255,0.35);
+    transform: translateX(4px);
 }
-
-.hero h1 {
-    font-size: 44px;
-    font-weight: 900;
-    margin: 0;
-    color: white;
-}
-
-.hero p {
-    margin: 8px 0 0 0;
-    color: #94a3b8;
-    font-size: 18px;
-}
-
 @media (max-width: 768px) {
     .block-container {
         padding-left: 1rem;
         padding-right: 1rem;
     }
-
-    .hero {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .hero img {
-        width: 180px;
-    }
-
-    .hero h1 {
-        font-size: 34px;
-    }
-
     div[data-testid="stMetricValue"] {
         font-size: 34px !important;
     }
@@ -105,9 +71,6 @@ div[data-testid="stMetricValue"] {
 </style>
 """, unsafe_allow_html=True)
 
-# =========================
-# GOOGLE SHEET
-# =========================
 G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90/export?format=csv&gid=0"
 
 @st.cache_data(ttl=60)
@@ -129,16 +92,10 @@ def load_data():
     numeric_cols = ["Measurement", "USL", "LSL", "Severity", "Occurrence", "Detection"]
 
     for col in numeric_cols:
-        df[col] = (
-            df[col]
-            .astype(str)
-            .str.replace(",", ".", regex=False)
-            .str.strip()
-        )
+        df[col] = df[col].astype(str).str.replace(",", ".", regex=False).str.strip()
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     invalid_rows = df[df[numeric_cols].isna().any(axis=1)]
-
     if len(invalid_rows) > 0:
         st.error("❌ Erreur data : certaines valeurs numériques sont invalides.")
         st.dataframe(invalid_rows, use_container_width=True)
@@ -157,9 +114,6 @@ if df.empty:
     st.error("❌ Aucune donnée disponible.")
     st.stop()
 
-# =========================
-# CALCULS
-# =========================
 msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", na=False)]
 spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", na=False)]
 
@@ -185,53 +139,90 @@ else:
     cp = 0
     cpk = 0
 
-# =========================
-# SIDEBAR
-# =========================
-with st.sidebar:
-    st.image("logo.png", width=160)
+def generate_pdf_report():
+    doc_path = "rapport_qualite_specsense.pdf"
+    styles = getSampleStyleSheet()
+    story = []
 
-    st.markdown("## 📊 Navigation")
+    story.append(Paragraph("Rapport Qualité - SpecSense AI", styles["Title"]))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph("Résumé global", styles["Heading2"]))
+    story.append(Paragraph(f"Nombre total de mesures : {total}", styles["BodyText"]))
+    story.append(Paragraph(f"Points MSA : {msa_count}", styles["BodyText"]))
+    story.append(Paragraph(f"Points SPC : {spc_count}", styles["BodyText"]))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph("Indicateurs processus", styles["Heading2"]))
+    story.append(Paragraph(f"Moyenne : {mean_val:.4f}", styles["BodyText"]))
+    story.append(Paragraph(f"Écart-type : {std_val:.6f}", styles["BodyText"]))
+    story.append(Paragraph(f"Cp : {cp:.2f}", styles["BodyText"]))
+    story.append(Paragraph(f"Cpk : {cpk:.2f}", styles["BodyText"]))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph("Conclusion", styles["Heading2"]))
+
+    if cpk >= 1.33:
+        conclusion = "Le processus est capable de respecter les tolérances client."
+    elif cpk >= 1:
+        conclusion = "Le processus est limite. Une amélioration est nécessaire."
+    else:
+        conclusion = "Le processus n’est pas capable. Des actions correctives sont requises."
+
+    story.append(Paragraph(conclusion, styles["BodyText"]))
+
+    doc = SimpleDocTemplate(doc_path)
+    doc.build(story)
+    return doc_path
+
+with st.sidebar:
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=170)
+    else:
+        st.markdown("## SpecSense AI")
+
+    st.markdown("""
+    <div style="font-size:14px;color:#94a3b8;font-weight:800;letter-spacing:1px;margin:18px 0 12px 0;">
+        MENU PRINCIPAL
+    </div>
+    """, unsafe_allow_html=True)
 
     page = st.radio(
         "",
         [
+            "🏠 Tableau de bord",
             "📏 MSA",
             "📉 SPC",
             "🎯 Capabilité",
             "📊 Pareto",
             "⚠️ AMDEC",
             "🤖 IA"
-        ]
+        ],
+        label_visibility="collapsed"
     )
 
     st.markdown("---")
-    st.metric("📦 Total mesures", total)
-    st.metric("📏 Points MSA", msa_count)
-    st.metric("📈 Points SPC", spc_count)
+    st.markdown("### 📌 Indicateurs")
+    st.metric("Total mesures", total)
+    st.metric("Points MSA", msa_count)
+    st.metric("Points SPC", spc_count)
     st.markdown("---")
     st.caption(f"🕐 Dernière MAJ : {datetime.now().strftime('%H:%M:%S')}")
 
 page_clean = page.split(" ", 1)[1]
 
-# =========================
-# HEADER
-# =========================
-st.markdown("""
-<div class="hero">
-    <img src="logo.png">
-    <div>
-        <h1>SpecSense AI</h1>
-        <p>Suite Qualité 4.0 • Tableau de bord qualité intelligent</p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+h1, h2 = st.columns([1, 5])
+with h1:
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=140)
+with h2:
+    st.markdown("""
+    <h1 style="margin:0; font-size:44px; font-weight:900;">Tableau de bord</h1>
+    <p style="margin:6px 0 0 0; color:#94a3b8; font-size:18px;">
+        Vue d’ensemble de la qualité de vos processus
+    </p>
+    """, unsafe_allow_html=True)
 
-# =========================
-# KPI
-# =========================
+st.markdown("---")
+
 k1, k2, k3, k4 = st.columns(4)
-
 k1.metric("Moyenne", f"{mean_val:.4f}")
 k2.metric("Écart-type", f"{std_val:.6f}")
 k3.metric("Cp", f"{cp:.2f}")
@@ -246,16 +237,54 @@ else:
 
 st.markdown("---")
 
-# =========================
-# MSA
-# =========================
-if page_clean == "MSA":
+if page_clean == "Tableau de bord":
+    st.subheader("🏠 Vue générale")
+
+    col_a, col_b = st.columns(2)
+
+    with col_a:
+        st.markdown("### 📈 Évolution des mesures")
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=list(range(1, len(df) + 1)),
+            y=df["Measurement"],
+            mode="lines+markers",
+            name="Mesures"
+        ))
+        fig.add_hline(y=mean_val, line_dash="dash", annotation_text="Moyenne")
+        fig.add_hline(y=usl, line_dash="dot", annotation_text="USL")
+        fig.add_hline(y=lsl, line_dash="dot", annotation_text="LSL")
+        fig.update_layout(template="plotly_dark", height=420)
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col_b:
+        st.markdown("### 🎯 Synthèse capabilité")
+        fig = px.histogram(
+            df,
+            x="Measurement",
+            nbins=25,
+            template="plotly_dark",
+            title="Distribution des mesures"
+        )
+        fig.add_vline(x=usl, line_dash="dash", annotation_text="USL")
+        fig.add_vline(x=lsl, line_dash="dash", annotation_text="LSL")
+        fig.add_vline(x=mean_val, line_dash="dot", annotation_text="Moyenne")
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("### 🧠 Synthèse")
+    if cpk >= 1.33:
+        st.success("✅ Le processus est capable et stable.")
+    elif cpk >= 1:
+        st.warning("⚠️ Le processus est limite. Une amélioration est nécessaire.")
+    else:
+        st.error("❌ Le processus n’est pas capable. Actions correctives requises.")
+
+elif page_clean == "MSA":
     st.subheader("📏 Analyse MSA Type 1")
 
     if len(msa_data) > 0:
         mean_msa = msa_data["Measurement"].mean()
         std_msa = msa_data["Measurement"].std()
-
         ref = (usl + lsl) / 2
         tolerance = usl - lsl
 
@@ -290,9 +319,6 @@ if page_clean == "MSA":
     else:
         st.warning("Aucune donnée MSA disponible.")
 
-# =========================
-# SPC
-# =========================
 elif page_clean == "SPC":
     st.subheader("📉 Carte de contrôle SPC")
 
@@ -336,9 +362,6 @@ elif page_clean == "SPC":
     else:
         st.success("✅ Le processus est sous contrôle par rapport aux spécifications.")
 
-# =========================
-# CAPABILITÉ
-# =========================
 elif page_clean == "Capabilité":
     st.subheader("🎯 Capabilité du processus")
 
@@ -370,9 +393,6 @@ elif page_clean == "Capabilité":
     else:
         st.error("❌ Processus non capable. Actions correctives nécessaires.")
 
-# =========================
-# PARETO
-# =========================
 elif page_clean == "Pareto":
     st.subheader("📊 Analyse Pareto des défauts")
 
@@ -412,9 +432,6 @@ elif page_clean == "Pareto":
     else:
         st.success("✅ Aucun défaut détecté.")
 
-# =========================
-# AMDEC
-# =========================
 elif page_clean == "AMDEC":
     st.subheader("⚠️ Analyse AMDEC automatique")
 
@@ -468,12 +485,8 @@ elif page_clean == "AMDEC":
     else:
         st.success("🟢 Niveau de risque acceptable.")
 
-# =========================
-# IA
-# =========================
 elif page_clean == "IA":
     st.subheader("🤖 Assistant Qualité IA")
-
     st.info("Posez des questions sur SPC, Cpk, MSA, Pareto ou AMDEC.")
 
     user_question = st.text_area("Votre question qualité")
@@ -484,8 +497,19 @@ elif page_clean == "IA":
         else:
             st.success("Module IA prêt. Vous pouvez connecter Hugging Face ici.")
 
-# =========================
-# FOOTER
-# =========================
+st.markdown("---")
+st.subheader("📄 Rapport Qualité")
+
+if st.button("Générer le rapport PDF"):
+    pdf_path = generate_pdf_report()
+
+    with open(pdf_path, "rb") as f:
+        st.download_button(
+            label="📥 Télécharger le rapport PDF",
+            data=f,
+            file_name="rapport_qualite_specsense.pdf",
+            mime="application/pdf"
+        )
+
 st.markdown("---")
 st.caption("SpecSense AI V1.0 | Qualité 4.0 | Inspiré IATF 16949")
