@@ -21,25 +21,35 @@ st.set_page_config(
 # =========================
 # AI FUNCTION
 # =========================
-def ask_hf_ai(question):
-    API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+from huggingface_hub import InferenceClient
 
+def ask_hf_ai(question):
     if "HUGGINGFACE_TOKEN" not in st.secrets:
         return "❌ HUGGINGFACE_TOKEN manquant dans Streamlit Secrets."
 
-    headers = {
-        "Authorization": f"Bearer {st.secrets['HUGGINGFACE_TOKEN']}"
-    }
-
-    payload = {
-        "inputs": question
-    }
-
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+        client = InferenceClient(token=st.secrets["HUGGINGFACE_TOKEN"])
 
-        if response.status_code != 200:
-            return f"❌ Erreur IA : {response.text}"
+        response = client.chat.completions.create(
+            model="Qwen/Qwen2.5-7B-Instruct",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Tu es un expert en qualité industrielle. Réponds en français simple avec des actions concrètes."
+                },
+                {
+                    "role": "user",
+                    "content": question
+                }
+            ],
+            max_tokens=500,
+            temperature=0.3
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as e:
+        return f"❌ Erreur IA : {e}"
 
         result = response.json()
 
