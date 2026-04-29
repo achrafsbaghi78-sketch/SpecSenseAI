@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
 
-st.image("file_Design sans titre.png", width=180)
+st.image("logo.png", width=180)
 # =========================
 # CONFIG
 # =========================
