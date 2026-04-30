@@ -856,7 +856,7 @@ if st.button("Générer le rapport PDF"):
 # FOOTER
 # =========================
 st.markdown("---")
-st.caption("SpecSense AI V1.0 | Qualité 4.0 | Inspiré IATF 16949")                {
+st.caption("SpecSense AI V1.0 | Qualité 4.0 | Inspiré IATF 16949")
                     "role": "system",
                     "content": (
                         "Tu es un expert en qualité industrielle automobile. "
