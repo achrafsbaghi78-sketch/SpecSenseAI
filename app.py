@@ -481,7 +481,20 @@ def generate_pdf_report():
         story.append(Paragraph("Le processus respecte les tolérances.", styles["BodyText"]))
 
     story.append(Spacer(1, 12))
+story.append(Spacer(1, 20))
+story.append(Paragraph("Conclusion", styles["Heading2"]))
 
+if cpk < 1:
+    story.append(Paragraph(
+        "Le processus n'est pas conforme aux exigences qualité. "
+        "Des actions immédiates sont nécessaires.",
+        styles["BodyText"]
+    ))
+else:
+    story.append(Paragraph(
+        "Le processus est globalement maîtrisé.",
+        styles["BodyText"]
+    ))
     # =========================
     # SPC
     # =========================
