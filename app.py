@@ -851,39 +851,11 @@ if st.button("Générer le rapport PDF"):
             mime="application/pdf",
         )
 
-
 # =========================
 # FOOTER
 # =========================
 st.markdown("---")
 st.caption("SpecSense AI V1.0 | Qualité 4.0 | Inspiré IATF 16949")
-                   def ask_hf_ai(question):
-    if "HUGGINGFACE_TOKEN" not in st.secrets:
-        return "❌ HUGGINGFACE_TOKEN manquant."
-
-    try:
-        client = InferenceClient(token=st.secrets["HUGGINGFACE_TOKEN"])
-
-        response = client.chat.completions.create(
-            model="Qwen/Qwen2.5-7B-Instruct",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Tu es un expert en qualité industrielle automobile. Réponds en français simple avec des actions concrètes."
-                },
-                {
-                    "role": "user",
-                    "content": question
-                }
-            ],
-            max_tokens=600,
-            temperature=0.3
-        )
-
-        return response.choices[0].message.content
-
-    except Exception as e:
-        return f"❌ Erreur IA : {e}"
 
 
 # =========================
