@@ -114,7 +114,16 @@ div[role="radiogroup"] label:hover {
         padding-left: 1rem;
         padding-right: 1rem;
     }
+<style>
 
+div[data-testid="stMetricLabel"] p {
+    color: #cbd5e1 !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
     div[data-testid="stMetricValue"] {
         font-size: 34px !important;
     }
@@ -913,7 +922,7 @@ if st.button("Générer le rapport PDF"):
 st.markdown("---")
 st.caption("SpecSense AI V1.0 | Qualité 4.0 | Inspiré IATF 16949")color: #cbd5e1 !important;
     font-weight: 700 !important;
-    font-size: 16px !important;
+    
 }
 div[data-testid="stMetricValue"] {
     color: #ffffff !important;
