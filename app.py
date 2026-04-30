@@ -431,38 +431,134 @@ Actions :
 # =========================
 # PDF
 # =========================
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+
 def generate_pdf_report():
     doc_path = "rapport_qualite_specsense.pdf"
     styles = getSampleStyleSheet()
     story = []
 
+    # =========================
+    # LOGO
+    # =========================
+    if os.path.exists("logo.png"):
+        story.append(Image("logo.png", width=2*inch, height=1*inch))
+
+    story.append(Spacer(1, 12))
+
+    # =========================
+    # TITLE
+    # =========================
     story.append(Paragraph("Rapport Qualité - SpecSense AI", styles["Title"]))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 20))
 
-    story.append(Paragraph("Résumé global", styles["Heading2"]))
+    # =========================
+    # KPI
+    # =========================
+    story.append(Paragraph("Indicateurs clés", styles["Heading2"]))
     story.append(Paragraph(f"Nombre total de mesures : {total}", styles["BodyText"]))
-    story.append(Paragraph(f"Points MSA : {msa_count}", styles["BodyText"]))
-    story.append(Paragraph(f"Points SPC : {spc_count}", styles["BodyText"]))
-
-    story.append(Spacer(1, 12))
-    story.append(Paragraph("Indicateurs processus", styles["Heading2"]))
     story.append(Paragraph(f"Moyenne : {mean_val:.4f}", styles["BodyText"]))
     story.append(Paragraph(f"Écart-type : {std_val:.6f}", styles["BodyText"]))
     story.append(Paragraph(f"Cp : {cp:.2f}", styles["BodyText"]))
     story.append(Paragraph(f"Cpk : {cpk:.2f}", styles["BodyText"]))
+    story.append(Spacer(1, 12))
+
+    # =========================
+    # CAPABILITE
+    # =========================
+    story.append(Paragraph("Analyse Capabilité", styles["Heading2"]))
+
+    if cpk < 1:
+        story.append(Paragraph("❌ Processus non capable.", styles["BodyText"]))
+        story.append(Paragraph("Le processus ne respecte pas les tolérances client.", styles["BodyText"]))
+    elif cpk < 1.33:
+        story.append(Paragraph("⚠️ Processus limite.", styles["BodyText"]))
+        story.append(Paragraph("Une amélioration est nécessaire.", styles["BodyText"]))
+    else:
+        story.append(Paragraph("✅ Processus capable.", styles["BodyText"]))
+        story.append(Paragraph("Le processus respecte les tolérances.", styles["BodyText"]))
 
     story.append(Spacer(1, 12))
-    story.append(Paragraph("Conclusion", styles["Heading2"]))
 
-    if cpk >= 1.33:
-        conclusion = "Le processus est capable de respecter les tolérances client."
-    elif cpk >= 1:
-        conclusion = "Le processus est limite. Une amélioration est nécessaire."
+    # =========================
+    # SPC
+    # =========================
+    story.append(Paragraph("Analyse SPC", styles["Heading2"]))
+
+    mean_spc = spc_data["Measurement"].mean()
+    std_spc = spc_data["Measurement"].std()
+
+    ucl = mean_spc + 3 * std_spc
+    lcl = mean_spc - 3 * std_spc
+
+    out_control = spc_data[
+        (spc_data["Measurement"] > ucl) |
+        (spc_data["Measurement"] < lcl)
+    ]
+
+    if len(out_control) > 0:
+        story.append(Paragraph(f"❌ {len(out_control)} point(s) hors contrôle.", styles["BodyText"]))
     else:
-        conclusion = "Le processus n’est pas capable. Des actions correctives sont requises."
+        story.append(Paragraph("✅ Processus sous contrôle statistique.", styles["BodyText"]))
 
-    story.append(Paragraph(conclusion, styles["BodyText"]))
+    story.append(Spacer(1, 12))
 
+    # =========================
+    # PARETO
+    # =========================
+    story.append(Paragraph("Analyse Pareto", styles["Heading2"]))
+
+    defects = df[df["Defect_Type"].astype(str).str.upper() != "OK"]
+
+    if len(defects) > 0:
+        top_defect = defects["Defect_Type"].value_counts().idxmax()
+        top_count = defects["Defect_Type"].value_counts().max()
+
+        story.append(Paragraph(f"Défaut principal : {top_defect}", styles["BodyText"]))
+        story.append(Paragraph(f"Nombre d’occurrences : {top_count}", styles["BodyText"]))
+    else:
+        story.append(Paragraph("Aucun défaut détecté.", styles["BodyText"]))
+
+    story.append(Spacer(1, 12))
+
+    # =========================
+    # AMDEC
+    # =========================
+    story.append(Paragraph("Analyse AMDEC", styles["Heading2"]))
+
+    rpn_max = (df["Severity"] * df["Occurrence"] * df["Detection"]).max()
+
+    story.append(Paragraph(f"RPN maximum : {int(rpn_max)}", styles["BodyText"]))
+
+    if rpn_max >= 150:
+        story.append(Paragraph("🔴 Risque critique.", styles["BodyText"]))
+    elif rpn_max >= 100:
+        story.append(Paragraph("🟡 Risque élevé.", styles["BodyText"]))
+    else:
+        story.append(Paragraph("🟢 Risque acceptable.", styles["BodyText"]))
+
+    story.append(Spacer(1, 12))
+
+    # =========================
+    # ACTIONS
+    # =========================
+    story.append(Paragraph("Actions recommandées", styles["Heading2"]))
+
+    if cpk < 1:
+        story.append(Paragraph("- Recentrer le processus", styles["BodyText"]))
+        story.append(Paragraph("- Réduire la variation", styles["BodyText"]))
+        story.append(Paragraph("- Ajuster les paramètres machine", styles["BodyText"]))
+    elif cpk < 1.33:
+        story.append(Paragraph("- Renforcer le contrôle SPC", styles["BodyText"]))
+        story.append(Paragraph("- Stabiliser le processus", styles["BodyText"]))
+    else:
+        story.append(Paragraph("- Maintenir les conditions actuelles", styles["BodyText"]))
+
+    # =========================
+    # BUILD PDF
+    # =========================
     doc = SimpleDocTemplate(doc_path)
     doc.build(story)
 
