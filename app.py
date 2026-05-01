@@ -1004,37 +1004,309 @@ Pourquoi ?
         else:
             st.warning("Colonne Defect_Type introuvable.")
 elif page_clean == "SPC":
-    st.subheader("📉 Carte de contrôle SPC")
+    st.subheader("📉 Module SPC complet")
+
+    tab_control, tab_rules, tab_distribution, tab_capability, tab_machine, tab_interpretation = st.tabs([
+        "Carte de contrôle",
+        "Règles SPC",
+        "Distribution",
+        "Capabilité",
+        "Machine / Opérateur",
+        "Interprétation"
+    ])
 
     mean_spc = spc_data["Measurement"].mean()
     std_spc = spc_data["Measurement"].std()
+
     ucl = mean_spc + 3 * std_spc
     lcl = mean_spc - 3 * std_spc
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Ligne centrale", f"{mean_spc:.4f}")
-    c2.metric("Limite supérieure", f"{ucl:.4f}")
-    c3.metric("Limite inférieure", f"{lcl:.4f}")
+    spc_work = spc_data.copy().reset_index(drop=True)
+    spc_work["Point"] = range(1, len(spc_work) + 1)
+    spc_work["CL"] = mean_spc
+    spc_work["UCL"] = ucl
+    spc_work["LCL"] = lcl
+    spc_work["Hors_Controle"] = (
+        (spc_work["Measurement"] > ucl) |
+        (spc_work["Measurement"] < lcl)
+    )
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=list(range(1, len(spc_data) + 1)),
-        y=spc_data["Measurement"],
-        mode="lines+markers",
-        name="SPC"
-    ))
+    # =========================
+    # 1. CARTE DE CONTRÔLE
+    # =========================
+    with tab_control:
+        st.markdown("### 📈 Carte de contrôle")
 
-    fig.add_hline(y=mean_spc, line_dash="dash", annotation_text="CL")
-    fig.add_hline(y=ucl, line_dash="dash", annotation_text="UCL")
-    fig.add_hline(y=lcl, line_dash="dash", annotation_text="LCL")
-    fig.add_hline(y=usl, line_dash="dot", annotation_text="USL")
-    fig.add_hline(y=lsl, line_dash="dot", annotation_text="LSL")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Ligne centrale", f"{mean_spc:.4f}")
+        c2.metric("Limite supérieure UCL", f"{ucl:.4f}")
+        c3.metric("Limite inférieure LCL", f"{lcl:.4f}")
 
-    fig.update_layout(title="Carte de contrôle", template="plotly_dark", height=460)
-    st.plotly_chart(fig, use_container_width=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=spc_work["Point"],
+            y=spc_work["Measurement"],
+            mode="lines+markers",
+            name="Mesures"
+        ))
 
-    st.markdown("### 🧠 Interprétation détaillée")
-    st.info(interpretation_auto("SPC"))
+        fig.add_hline(y=mean_spc, line_dash="dash", annotation_text="CL")
+        fig.add_hline(y=ucl, line_dash="dash", annotation_text="UCL")
+        fig.add_hline(y=lcl, line_dash="dash", annotation_text="LCL")
+        fig.add_hline(y=usl, line_dash="dot", annotation_text="USL")
+        fig.add_hline(y=lsl, line_dash="dot", annotation_text="LSL")
+
+        fig.update_layout(
+            title="Carte de contrôle SPC",
+            template="plotly_dark",
+            height=460,
+            xaxis_title="Point",
+            yaxis_title="Mesure"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        out_control = spc_work[spc_work["Hors_Controle"]]
+
+        if len(out_control) > 0:
+            st.error(f"❌ {len(out_control)} point(s) hors limites de contrôle.")
+            st.dataframe(out_control, use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ Aucun point hors limites de contrôle.")
+
+    # =========================
+    # 2. RÈGLES SPC
+    # =========================
+    with tab_rules:
+        st.markdown("### 🚦 Règles SPC automatiques")
+
+        out_control = spc_work[spc_work["Hors_Controle"]]
+
+        # Règle 1 : point hors limites
+        rule1 = len(out_control)
+
+        # Règle 2 : 7 points consécutifs du même côté de la moyenne
+        values = spc_work["Measurement"].tolist()
+        above = [v > mean_spc for v in values]
+
+        max_run = 1
+        current_run = 1
+
+        for i in range(1, len(above)):
+            if above[i] == above[i - 1]:
+                current_run += 1
+                max_run = max(max_run, current_run)
+            else:
+                current_run = 1
+
+        rule2 = max_run >= 7
+
+        # Règle 3 : tendance 6 points montants ou descendants
+        trend_detected = False
+
+        for i in range(len(values) - 5):
+            segment = values[i:i + 6]
+
+            increasing = all(segment[j] < segment[j + 1] for j in range(5))
+            decreasing = all(segment[j] > segment[j + 1] for j in range(5))
+
+            if increasing or decreasing:
+                trend_detected = True
+                break
+
+        r1, r2, r3 = st.columns(3)
+
+        if rule1 > 0:
+            r1.error(f"❌ Règle 1: {rule1} point(s) hors contrôle")
+        else:
+            r1.success("✅ Règle 1: OK")
+
+        if rule2:
+            r2.warning("⚠️ Règle 2: série de 7 points détectée")
+        else:
+            r2.success("✅ Règle 2: OK")
+
+        if trend_detected:
+            r3.warning("⚠️ Règle 3: tendance détectée")
+        else:
+            r3.success("✅ Règle 3: OK")
+
+        st.markdown("### 🧠 Signification")
+
+        st.info("""
+Règles utilisées :
+- Règle 1 : un point hors UCL/LCL indique une cause spéciale.
+- Règle 2 : 7 points du même côté de la moyenne indiquent un décalage du processus.
+- Règle 3 : 6 points montants ou descendants indiquent une tendance ou dérive.
+""")
+
+    # =========================
+    # 3. DISTRIBUTION
+    # =========================
+    with tab_distribution:
+        st.markdown("### 📊 Distribution des mesures")
+
+        fig = px.histogram(
+            spc_work,
+            x="Measurement",
+            nbins=25,
+            title="Histogramme SPC",
+            template="plotly_dark"
+        )
+
+        fig.add_vline(x=mean_spc, line_dash="dot", annotation_text="Moyenne")
+        fig.add_vline(x=usl, line_dash="dash", annotation_text="USL")
+        fig.add_vline(x=lsl, line_dash="dash", annotation_text="LSL")
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        skew = spc_work["Measurement"].skew()
+
+        st.metric("Asymétrie distribution", f"{skew:.3f}")
+
+        if abs(skew) < 0.5:
+            st.success("✅ Distribution globalement équilibrée.")
+        else:
+            st.warning("⚠️ Distribution asymétrique : vérifier centrage ou causes spéciales.")
+
+    # =========================
+    # 4. CAPABILITÉ DANS SPC
+    # =========================
+    with tab_capability:
+        st.markdown("### 🎯 Capabilité SPC")
+
+        c1, c2, c3, c4 = st.columns(4)
+
+        c1.metric("USL", f"{usl:.4f}")
+        c2.metric("LSL", f"{lsl:.4f}")
+        c3.metric("Cp", f"{cp:.2f}")
+        c4.metric("Cpk", f"{cpk:.2f}")
+
+        if cpk >= 1.33:
+            st.success("✅ Processus capable.")
+        elif cpk >= 1:
+            st.warning("⚠️ Processus limite.")
+        else:
+            st.error("❌ Processus non capable.")
+
+        st.info("""
+Cp mesure le potentiel du processus.
+Cpk mesure la capabilité réelle en tenant compte du centrage.
+Si Cp > Cpk, le processus est souvent décentré.
+""")
+
+    # =========================
+    # 5. MACHINE / OPÉRATEUR
+    # =========================
+    with tab_machine:
+        st.markdown("### 🏭 Analyse Machine / Opérateur")
+
+        col_m, col_o = st.columns(2)
+
+        with col_m:
+            if "Machine" in spc_work.columns:
+                machine_stats = spc_work.groupby("Machine")["Measurement"].agg(["count", "mean", "std"]).reset_index()
+                machine_stats.columns = ["Machine", "Nombre", "Moyenne", "Écart-type"]
+
+                st.markdown("#### Machine")
+                st.dataframe(machine_stats, use_container_width=True, hide_index=True)
+
+                fig = px.box(
+                    spc_work,
+                    x="Machine",
+                    y="Measurement",
+                    color="Machine",
+                    title="Variation par machine",
+                    template="plotly_dark"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("Colonne Machine introuvable.")
+
+        with col_o:
+            if "Operator" in spc_work.columns:
+                operator_stats = spc_work.groupby("Operator")["Measurement"].agg(["count", "mean", "std"]).reset_index()
+                operator_stats.columns = ["Opérateur", "Nombre", "Moyenne", "Écart-type"]
+
+                st.markdown("#### Opérateur")
+                st.dataframe(operator_stats, use_container_width=True, hide_index=True)
+
+                fig = px.box(
+                    spc_work,
+                    x="Operator",
+                    y="Measurement",
+                    color="Operator",
+                    title="Variation par opérateur",
+                    template="plotly_dark"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("Colonne Operator introuvable.")
+
+    # =========================
+    # 6. INTERPRÉTATION
+    # =========================
+    with tab_interpretation:
+        st.markdown("### 🧠 Interprétation SPC détaillée")
+
+        out_control = spc_work[spc_work["Hors_Controle"]]
+
+        if len(out_control) > 0:
+            st.error(f"""
+❌ Le processus présente {len(out_control)} point(s) hors contrôle.
+
+Pourquoi ?
+- Un ou plusieurs points dépassent les limites UCL/LCL.
+- Cela indique une cause spéciale ou une variation anormale.
+
+Actions :
+- Identifier les points concernés.
+- Vérifier machine, matière, méthode et opérateur.
+- Corriger la cause spéciale avant de continuer la production.
+""")
+        else:
+            st.success("""
+✅ Le processus est sous contrôle statistique.
+
+Pourquoi ?
+- Tous les points sont à l'intérieur des limites UCL/LCL.
+- Aucune cause spéciale majeure n'est détectée.
+- La variation observée est une variation normale du processus.
+""")
+
+        if cpk < 1:
+            st.error(f"""
+❌ Attention : le processus est stable mais non capable.
+
+Pourquoi ?
+- Cpk = {cpk:.2f}, inférieur à 1.
+- Le processus peut être stable statistiquement, mais ne respecte pas bien les tolérances client.
+
+Actions :
+- Recentrer le processus.
+- Réduire la variation.
+- Ajuster les paramètres machine.
+""")
+        elif cpk < 1.33:
+            st.warning(f"""
+⚠️ Processus limite.
+
+Pourquoi ?
+- Cpk = {cpk:.2f}, inférieur au seuil recommandé 1.33.
+- Le risque qualité existe encore.
+
+Actions :
+- Renforcer le suivi SPC.
+- Réduire la variabilité.
+""")
+        else:
+            st.success(f"""
+✅ Processus capable.
+
+Pourquoi ?
+- Cpk = {cpk:.2f}, supérieur ou égal à 1.33.
+- Le processus respecte les tolérances client.
+""")
 
 
 elif page_clean == "Capabilité":
