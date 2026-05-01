@@ -1308,32 +1308,228 @@ Pourquoi ?
 - Le processus respecte les tolérances client.
 """)
 
-
 elif page_clean == "Capabilité":
-    st.subheader("🎯 Capabilité du processus")
+    st.subheader("🎯 Module Capabilité complet")
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("USL", f"{usl:.4f}")
-    c2.metric("LSL", f"{lsl:.4f}")
-    c3.metric("Cp", f"{cp:.2f}")
-    c4.metric("Cpk", f"{cpk:.2f}")
+    tab_kpi, tab_hist, tab_centering, tab_machine, tab_interpretation = st.tabs([
+        "Indices Cp / Cpk",
+        "Histogramme",
+        "Centrage",
+        "Machine / Opérateur",
+        "Interprétation"
+    ])
 
-    fig = px.histogram(
-        df,
-        x="Measurement",
-        nbins=25,
-        title="Histogramme de capabilité",
-        template="plotly_dark"
-    )
+    # =========================
+    # 1. INDICES CP / CPK
+    # =========================
+    with tab_kpi:
+        st.markdown("### 📌 Indices de capabilité")
 
-    fig.add_vline(x=usl, line_dash="dash", annotation_text="USL")
-    fig.add_vline(x=lsl, line_dash="dash", annotation_text="LSL")
-    fig.add_vline(x=mean_val, line_dash="dot", annotation_text="Moyenne")
+        c1, c2, c3, c4 = st.columns(4)
 
-    st.plotly_chart(fig, use_container_width=True)
+        c1.metric("LS", f"{usl:.4f}")
+        c2.metric("LI", f"{lsl:.4f}")
+        c3.metric("Cp", f"{cp:.2f}")
+        c4.metric("Cpk", f"{cpk:.2f}")
 
-    st.markdown("### 🧠 Interprétation détaillée")
-    st.info(interpretation_auto("Capabilité"))
+        st.info("""
+Cp mesure la capacité théorique du processus.
+
+Cpk mesure la capacité réelle en tenant compte du centrage.
+Si Cp > Cpk, le processus est généralement décentré.
+""")
+
+        if cpk >= 1.67:
+            st.success("🟢 Capabilité excellente.")
+        elif cpk >= 1.33:
+            st.success("✅ Processus capable.")
+        elif cpk >= 1.00:
+            st.warning("⚠️ Processus limite.")
+        else:
+            st.error("❌ Processus non capable.")
+
+    # =========================
+    # 2. HISTOGRAMME
+    # =========================
+    with tab_hist:
+        st.markdown("### 📊 Histogramme de capabilité")
+
+        fig = px.histogram(
+            df,
+            x="Measurement",
+            nbins=25,
+            title="Distribution des mesures",
+            template="plotly_dark"
+        )
+
+        fig.add_vline(x=usl, line_dash="dash", annotation_text="LS")
+        fig.add_vline(x=lsl, line_dash="dash", annotation_text="LI")
+        fig.add_vline(x=mean_val, line_dash="dot", annotation_text="Moyenne")
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        out_spec = df[
+            (df["Measurement"] > usl) |
+            (df["Measurement"] < lsl)
+        ]
+
+        if len(out_spec) > 0:
+            st.error(f"❌ {len(out_spec)} mesure(s) hors spécifications.")
+            st.dataframe(out_spec, use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ Toutes les mesures sont dans les spécifications.")
+
+    # =========================
+    # 3. CENTRAGE
+    # =========================
+    with tab_centering:
+        st.markdown("### 🎯 Analyse du centrage")
+
+        target = (usl + lsl) / 2
+        decentrage = mean_val - target
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Cible", f"{target:.4f}")
+        c2.metric("Moyenne", f"{mean_val:.4f}")
+        c3.metric("Décalage", f"{decentrage:.6f}")
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=list(range(1, len(df) + 1)),
+            y=df["Measurement"],
+            mode="lines+markers",
+            name="Mesures"
+        ))
+
+        fig.add_hline(y=target, line_dash="solid", annotation_text="Cible")
+        fig.add_hline(y=mean_val, line_dash="dash", annotation_text="Moyenne")
+        fig.add_hline(y=usl, line_dash="dot", annotation_text="LS")
+        fig.add_hline(y=lsl, line_dash="dot", annotation_text="LI")
+
+        fig.update_layout(
+            title="Centrage du processus",
+            template="plotly_dark",
+            height=430
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        if abs(decentrage) <= (usl - lsl) * 0.05:
+            st.success("✅ Processus bien centré.")
+        else:
+            st.warning("⚠️ Processus décentré. Ajustement machine recommandé.")
+
+    # =========================
+    # 4. MACHINE / OPÉRATEUR
+    # =========================
+    with tab_machine:
+        st.markdown("### 🏭 Capabilité par Machine / Opérateur")
+
+        col_m, col_o = st.columns(2)
+
+        with col_m:
+            if "Machine" in df.columns:
+                machine_stats = df.groupby("Machine")["Measurement"].agg(["count", "mean", "std"]).reset_index()
+                machine_stats.columns = ["Machine", "Nombre", "Moyenne", "Écart-type"]
+
+                st.markdown("#### Machine")
+                st.dataframe(machine_stats, use_container_width=True, hide_index=True)
+
+                fig = px.box(
+                    df,
+                    x="Machine",
+                    y="Measurement",
+                    color="Machine",
+                    title="Distribution par machine",
+                    template="plotly_dark"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("Colonne Machine introuvable.")
+
+        with col_o:
+            if "Operator" in df.columns:
+                operator_stats = df.groupby("Operator")["Measurement"].agg(["count", "mean", "std"]).reset_index()
+                operator_stats.columns = ["Opérateur", "Nombre", "Moyenne", "Écart-type"]
+
+                st.markdown("#### Opérateur")
+                st.dataframe(operator_stats, use_container_width=True, hide_index=True)
+
+                fig = px.box(
+                    df,
+                    x="Operator",
+                    y="Measurement",
+                    color="Operator",
+                    title="Distribution par opérateur",
+                    template="plotly_dark"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("Colonne Operator introuvable.")
+
+    # =========================
+    # 5. INTERPRÉTATION
+    # =========================
+    with tab_interpretation:
+        st.markdown("### 🧠 Interprétation Capabilité détaillée")
+
+        target = (usl + lsl) / 2
+        decentrage = mean_val - target
+
+        if cpk < 1:
+            st.error(f"""
+❌ Processus non capable.
+
+Pourquoi ?
+- Cpk = {cpk:.2f}, donc inférieur à 1.
+- Le processus ne respecte pas correctement les tolérances client.
+- Il existe un risque élevé de pièces non conformes.
+
+Analyse :
+- Cp = {cp:.2f}
+- Cpk = {cpk:.2f}
+- Décalage moyenne/cible = {decentrage:.6f}
+
+Causes possibles :
+- Processus décentré
+- Variation trop élevée
+- Réglage machine incorrect
+- Usure outil ou instabilité process
+
+Actions :
+- Recentrer le processus
+- Réduire la variation
+- Ajuster les paramètres machine
+- Renforcer le suivi SPC
+""")
+
+        elif cpk < 1.33:
+            st.warning(f"""
+⚠️ Processus limite.
+
+Pourquoi ?
+- Cpk = {cpk:.2f}, inférieur au seuil recommandé 1.33.
+- Le processus produit globalement bien, mais avec une marge qualité faible.
+
+Actions :
+- Réduire la variabilité
+- Surveiller les dérives SPC
+- Stabiliser les conditions de production
+""")
+
+        else:
+            st.success(f"""
+✅ Processus capable.
+
+Pourquoi ?
+- Cpk = {cpk:.2f}, supérieur ou égal à 1.33.
+- Le processus respecte les tolérances client avec une marge suffisante.
+
+Actions :
+- Maintenir les paramètres actuels
+- Continuer la surveillance SPC
+- Standardiser les bonnes pratiques
+""")
 
 
 elif page_clean == "Pareto":
