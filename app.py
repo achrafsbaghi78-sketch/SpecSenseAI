@@ -781,9 +781,28 @@ elif page_clean == "MSA":
         "Stability",
         "Attribute MSA"
     ])
-st.markdown("### 🤖 Interprétation IA")
 
-context_msa = f"""
+    # =========================
+    # MSA TYPE 1
+    # =========================
+    with tab_msa1:
+        st.markdown("### 📏 MSA Type 1")
+
+        if len(msa_data) > 0:
+            mean_msa = msa_data["Measurement"].mean()
+            std_msa = msa_data["Measurement"].std()
+            ref = (usl + lsl) / 2
+            tolerance = usl - lsl
+
+            cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
+            cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
+
+            st.metric("Cg", f"{cg:.2f}")
+            st.metric("Cgk", f"{cgk:.2f}")
+
+            st.markdown("### 🤖 Interprétation IA")
+
+            context_msa = f"""
 Type analyse : MSA
 Référence = {ref:.4f}
 Tolérance = {tolerance:.4f}
@@ -792,22 +811,29 @@ Cgk = {cgk:.2f}
 Nombre de mesures MSA = {len(msa_data)}
 """
 
-with st.spinner("🤖 Analyse IA MSA..."):
-    ai_msa = generate_ai_module_analysis("MSA", context_msa)
+            with st.spinner("🤖 Analyse IA MSA..."):
+                ai_msa = generate_ai_module_analysis("MSA", context_msa)
 
-st.info(ai_msa)
- elif page_clean == "MSA":
- elif page_clean == "MSA":
-    st.subheader("📏 Module MSA complet")
+            st.info(ai_msa)
 
-    tab_msa1, tab_grr, tab_bias, tab_linearity, tab_stability, tab_attribute = st.tabs([
-        "MSA Type 1",
-        "Gage R&R",
-        "Bias",
-        "Linearity",
-        "Stability",
-        "Attribute MSA"
-    ])
+        else:
+            st.warning("Aucune donnée MSA disponible.")
+
+    # باقي tabs خليهوم فارغين دابا
+    with tab_grr:
+        st.info("GRR à ajouter")
+
+    with tab_bias:
+        st.info("Bias à ajouter")
+
+    with tab_linearity:
+        st.info("Linearity à ajouter")
+
+    with tab_stability:
+        st.info("Stability à ajouter")
+
+    with tab_attribute:
+        st.info("Attribute MSA à ajouter")
 
     # =========================
     # MSA TYPE 1
