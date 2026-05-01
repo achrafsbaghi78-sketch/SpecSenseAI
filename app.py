@@ -872,6 +872,12 @@ if len(values) >= 6:
                 st.dataframe(machine_stats, use_container_width=True, hide_index=True)
 
                 fig = px.box(
+    spc_work,
+    x="Machine",
+    y="Measurement",
+    color="Machine",
+    template="plotly_dark"
+)
 elif page_clean == "SPC":
     st.subheader("📉 Module SPC complet")
 
