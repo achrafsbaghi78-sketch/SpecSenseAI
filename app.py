@@ -749,45 +749,260 @@ if page_clean == "Tableau de bord":
 
 
 elif page_clean == "MSA":
-    st.subheader("📏 Analyse MSA Type 1")
+    st.subheader("📏 Module MSA complet")
 
-    if len(msa_data) > 0:
-        mean_msa = msa_data["Measurement"].mean()
-        std_msa = msa_data["Measurement"].std()
-        ref = (usl + lsl) / 2
-        tolerance = usl - lsl
+    tab_msa1, tab_grr, tab_bias, tab_linearity, tab_stability, tab_attribute = st.tabs([
+        "MSA Type 1",
+        "Gage R&R",
+        "Bias",
+        "Linearity",
+        "Stability",
+        "Attribute MSA"
+    ])
 
-        cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
-        cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
+    # =========================
+    # 1. MSA TYPE 1
+    # =========================
+    with tab_msa1:
+        st.markdown("### 📏 MSA Type 1")
 
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Référence", f"{ref:.4f}")
-        c2.metric("Tolérance", f"{tolerance:.4f}")
-        c3.metric("Cg", f"{cg:.2f}")
-        c4.metric("Cgk", f"{cgk:.2f}")
+        if len(msa_data) > 0:
+            mean_msa = msa_data["Measurement"].mean()
+            std_msa = msa_data["Measurement"].std()
+            ref = (usl + lsl) / 2
+            tolerance = usl - lsl
 
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=list(range(1, len(msa_data) + 1)),
-            y=msa_data["Measurement"],
-            mode="lines+markers",
-            name="Mesures MSA"
-        ))
+            cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
+            cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
 
-        fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
-        fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
-        fig.update_layout(title="Carte MSA", template="plotly_dark", height=430)
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Référence", f"{ref:.4f}")
+            c2.metric("Tolérance", f"{tolerance:.4f}")
+            c3.metric("Cg", f"{cg:.2f}")
+            c4.metric("Cgk", f"{cgk:.2f}")
 
-        st.plotly_chart(fig, use_container_width=True)
-        st.dataframe(msa_data, use_container_width=True, hide_index=True)
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=list(range(1, len(msa_data) + 1)),
+                y=msa_data["Measurement"],
+                mode="lines+markers",
+                name="Mesures MSA"
+            ))
+            fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
+            fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
+            fig.update_layout(title="Carte MSA Type 1", template="plotly_dark", height=430)
 
-        st.markdown("### 🧠 Interprétation détaillée")
-        st.info(interpretation_auto("MSA"))
+            st.plotly_chart(fig, use_container_width=True)
 
-    else:
-        st.warning("Aucune donnée MSA disponible.")
+            if cg >= 1.33 and cgk >= 1.33:
+                st.success("✅ Système de mesure acceptable.")
+            else:
+                st.error("❌ Système de mesure non acceptable.")
+        else:
+            st.warning("Aucune donnée MSA disponible.")
 
+    # =========================
+    # 2. GAGE R&R
+    # =========================
+    with tab_grr:
+        st.markdown("### ⚙️ Gage R&R")
 
+        if len(msa_data) > 0:
+            df_grr = msa_data.copy()
+
+            var_total = df_grr["Measurement"].var()
+            var_operator = df_grr.groupby("Operator")["Measurement"].mean().var()
+            var_repeat = df_grr.groupby(["Part_ID", "Operator"])["Measurement"].var().mean()
+
+            var_operator = 0 if pd.isna(var_operator) else var_operator
+            var_repeat = 0 if pd.isna(var_repeat) else var_repeat
+
+            var_grr = var_operator + var_repeat
+            percent_grr = (var_grr / var_total) * 100 if var_total > 0 else 0
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Variation totale", f"{var_total:.8f}")
+            c2.metric("GRR", f"{var_grr:.8f}")
+            c3.metric("%GRR", f"{percent_grr:.2f}%")
+
+            if percent_grr < 10:
+                st.success("✅ Gage R&R excellent : système de mesure acceptable.")
+            elif percent_grr < 30:
+                st.warning("⚠️ Gage R&R acceptable sous conditions.")
+            else:
+                st.error("❌ Gage R&R non acceptable.")
+
+            fig = px.box(
+                df_grr,
+                x="Operator",
+                y="Measurement",
+                color="Operator",
+                title="Variation par opérateur",
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        else:
+            st.warning("Aucune donnée MSA disponible.")
+
+    # =========================
+    # 3. BIAS
+    # =========================
+    with tab_bias:
+        st.markdown("### 🎯 Bias")
+
+        if len(msa_data) > 0:
+            reference = st.number_input("Valeur de référence", value=12.0000, format="%.4f")
+
+            mean_bias = msa_data["Measurement"].mean()
+            bias = mean_bias - reference
+
+            c1, c2 = st.columns(2)
+            c1.metric("Moyenne mesurée", f"{mean_bias:.6f}")
+            c2.metric("Bias", f"{bias:.6f}")
+
+            if abs(bias) <= 0.001:
+                st.success("✅ Bias faible : instrument bien centré.")
+            else:
+                st.error("❌ Bias élevé : instrument décalé par rapport à la référence.")
+
+            st.info("""
+Pourquoi ?
+- Le Bias représente l'écart entre la moyenne mesurée et la valeur de référence.
+- Un Bias élevé indique un problème de calibration ou de centrage.
+""")
+        else:
+            st.warning("Aucune donnée MSA disponible.")
+
+    # =========================
+    # 4. LINEARITY
+    # =========================
+    with tab_linearity:
+        st.markdown("### 📈 Linearity")
+
+        if len(msa_data) > 0:
+            df_lin = msa_data.copy()
+            df_lin["Reference"] = df_lin.groupby("Part_ID")["Measurement"].transform("mean")
+            df_lin["Bias"] = df_lin["Measurement"] - df_lin["Reference"]
+
+            fig = px.scatter(
+                df_lin,
+                x="Reference",
+                y="Bias",
+                color="Operator",
+                trendline="ols",
+                title="Linearity : Bias vs Référence",
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            slope_info = df_lin.groupby("Part_ID")["Bias"].mean().std()
+
+            st.metric("Variation du Bias", f"{slope_info:.6f}")
+
+            if slope_info <= 0.001:
+                st.success("✅ Linéarité acceptable.")
+            else:
+                st.warning("⚠️ Linéarité à vérifier : le biais change selon la valeur mesurée.")
+
+            st.info("""
+Pourquoi ?
+- La linéarité vérifie si l'instrument reste précis sur toute la plage de mesure.
+- Si le biais change selon la référence, l'instrument n'est pas linéaire.
+""")
+        else:
+            st.warning("Aucune donnée MSA disponible.")
+
+    # =========================
+    # 5. STABILITY
+    # =========================
+    with tab_stability:
+        st.markdown("### ⏳ Stability")
+
+        if len(msa_data) > 0:
+            df_stab = msa_data.copy()
+            df_stab["Date_Time"] = pd.to_datetime(df_stab["Date_Time"], errors="coerce")
+            df_stab = df_stab.dropna(subset=["Date_Time"]).sort_values("Date_Time")
+
+            mean_stab = df_stab["Measurement"].mean()
+            std_stab = df_stab["Measurement"].std()
+
+            ucl_stab = mean_stab + 3 * std_stab
+            lcl_stab = mean_stab - 3 * std_stab
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=df_stab["Date_Time"],
+                y=df_stab["Measurement"],
+                mode="lines+markers",
+                name="Mesures"
+            ))
+            fig.add_hline(y=mean_stab, line_dash="dash", annotation_text="Moyenne")
+            fig.add_hline(y=ucl_stab, line_dash="dot", annotation_text="UCL")
+            fig.add_hline(y=lcl_stab, line_dash="dot", annotation_text="LCL")
+            fig.update_layout(title="Stability dans le temps", template="plotly_dark", height=430)
+
+            st.plotly_chart(fig, use_container_width=True)
+
+            out_stab = df_stab[
+                (df_stab["Measurement"] > ucl_stab) |
+                (df_stab["Measurement"] < lcl_stab)
+            ]
+
+            if len(out_stab) == 0:
+                st.success("✅ Système stable dans le temps.")
+            else:
+                st.error(f"❌ {len(out_stab)} point(s) instables détectés.")
+
+        else:
+            st.warning("Aucune donnée MSA disponible.")
+
+    # =========================
+    # 6. ATTRIBUTE MSA
+    # =========================
+    with tab_attribute:
+        st.markdown("### ✅ Attribute MSA")
+
+        if "Defect_Type" in df.columns:
+            df_attr = df.copy()
+
+            df_attr["Decision"] = df_attr["Defect_Type"].astype(str).str.upper().apply(
+                lambda x: "OK" if x == "OK" else "NOK"
+            )
+
+            total_attr = len(df_attr)
+            ok_count = len(df_attr[df_attr["Decision"] == "OK"])
+            nok_count = len(df_attr[df_attr["Decision"] == "NOK"])
+
+            agreement = (ok_count / total_attr) * 100 if total_attr > 0 else 0
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("OK", ok_count)
+            c2.metric("NOK", nok_count)
+            c3.metric("% OK", f"{agreement:.2f}%")
+
+            fig = px.pie(
+                df_attr,
+                names="Decision",
+                title="Répartition OK / NOK",
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            if agreement >= 90:
+                st.success("✅ Attribute MSA acceptable.")
+            elif agreement >= 75:
+                st.warning("⚠️ Attribute MSA moyen : à surveiller.")
+            else:
+                st.error("❌ Attribute MSA non acceptable.")
+
+            st.info("""
+Pourquoi ?
+- Attribute MSA est utilisé pour les contrôles visuels ou qualitatifs.
+- Il analyse la cohérence des décisions OK / NOK.
+""")
+        else:
+            st.warning("Colonne Defect_Type introuvable.")
 elif page_clean == "SPC":
     st.subheader("📉 Carte de contrôle SPC")
 
