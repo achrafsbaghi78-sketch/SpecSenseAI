@@ -816,7 +816,7 @@ if st.button("Générer le rapport PDF"):
 
 
 st.markdown("---")
-st.caption("SpecSense AI V1.0 | Qualité 4.0 | Inspiré IATF 16949")        font-size: 34px !important;
+st.caption("SpecSense AI V1.0 | Qualité 4.0 | Inspiré IATF 16949")        
     }
 }
 </style>
