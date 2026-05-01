@@ -1023,87 +1023,6 @@ if st.button("Générer le rapport PDF"):
             mime="application/pdf"
         )
 
-
-# =========================
-# FOOTER
-# =========================
-st.markdown("---")
-st.caption("SpecSense AI V1.0 | Qualité 4.0 | Inspiré IATF 16949")    div[data-testid="stMetricValue"] {
-        font-size: 34px !important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-# =========================
-# AI FUNCTIONS
-# =========================
-def ask_hf_ai(question):
-    if "HUGGINGFACE_TOKEN" not in st.secrets:
-        return "❌ HUGGINGFACE_TOKEN manquant dans Streamlit Secrets."
-
-    try:
-        client = InferenceClient(token=st.secrets["HUGGINGFACE_TOKEN"])
-
-        response = client.chat.completions.create(
-            model="Qwen/Qwen2.5-7B-Instruct",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Tu es un expert qualité automobile. Réponds en français simple, professionnel et avec des actions concrètes."
-                },
-                {
-                    "role": "user",
-                    "content": question
-                }
-            ],
-            max_tokens=600,
-            temperature=0.3
-        )
-
-        return response.choices[0].message.content
-
-    except Exception as e:
-        return f"❌ Erreur IA : {e}"
-
-
-def generate_ai_module_analysis(module_name, context):
-    prompt = f"""
-Tu es un expert qualité automobile.
-
-Module analysé : {module_name}
-
-Données :
-{context}
-
-Réponds exactement avec ce format :
-
-INTERPRÉTATION :
-- ...
-
-ACTIONS RECOMMANDÉES :
-- ...
-- ...
-- ...
-
-Réponse en français, claire, professionnelle et concrète.
-"""
-    return ask_hf_ai(prompt)
-
-
-def show_ai_analysis(module_name, context):
-    st.markdown("### 🤖 Interprétation IA & Actions recommandées")
-
-    key = f"ai_{module_name}_{abs(hash(context))}"
-
-    if key not in st.session_state:
-        with st.spinner(f"🤖 Analyse IA {module_name}..."):
-            st.session_state[key] = generate_ai_module_analysis(module_name, context)
-
-    st.info(st.session_state[key])
-
-
 # =========================
 # DATA
 # =========================
@@ -3806,8 +3725,6 @@ if st.button("Générer le rapport PDF"):
             file_name="rapport_qualite_specsense.pdf",
             mime="application/pdf"
         )
-
-
 # =========================
 # FOOTER
 # =========================
