@@ -797,6 +797,7 @@ with st.spinner("🤖 Analyse IA MSA..."):
 
 st.info(ai_msa)
  elif page_clean == "MSA":
+ elif page_clean == "MSA":
     st.subheader("📏 Module MSA complet")
 
     tab_msa1, tab_grr, tab_bias, tab_linearity, tab_stability, tab_attribute = st.tabs([
@@ -809,7 +810,7 @@ st.info(ai_msa)
     ])
 
     # =========================
-    # 1. MSA TYPE 1
+    # MSA TYPE 1
     # =========================
     with tab_msa1:
         st.markdown("### 📏 MSA Type 1")
@@ -839,7 +840,6 @@ st.info(ai_msa)
 
             fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
             fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
-
             fig.update_layout(
                 title="Carte MSA Type 1",
                 template="plotly_dark",
@@ -852,8 +852,42 @@ st.info(ai_msa)
                 st.success("✅ Système de mesure acceptable.")
             else:
                 st.error("❌ Système de mesure non acceptable.")
+
+            st.markdown("### 🤖 Interprétation IA")
+
+            context_msa = f"""
+Type analyse : MSA Type 1
+Référence = {ref:.4f}
+Tolérance = {tolerance:.4f}
+Moyenne MSA = {mean_msa:.4f}
+Écart-type MSA = {std_msa:.6f}
+Cg = {cg:.2f}
+Cgk = {cgk:.2f}
+Nombre de mesures MSA = {len(msa_data)}
+"""
+
+            with st.spinner("🤖 Analyse IA MSA..."):
+                ai_msa = generate_ai_module_analysis("MSA", context_msa)
+
+            st.info(ai_msa)
+
         else:
             st.warning("Aucune donnée MSA disponible.")
+
+    with tab_grr:
+        st.info("Gage R&R à ajouter ici.")
+
+    with tab_bias:
+        st.info("Bias à ajouter ici.")
+
+    with tab_linearity:
+        st.info("Linearity à ajouter ici.")
+
+    with tab_stability:
+        st.info("Stability à ajouter ici.")
+
+    with tab_attribute:
+        st.info("Attribute MSA à ajouter ici.")
 
     # =========================
     # 2. GAGE R&R
