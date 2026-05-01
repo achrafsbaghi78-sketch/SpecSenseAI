@@ -93,7 +93,29 @@ div[role="radiogroup"] label:hover {
 def ask_hf_ai(question):
     if "HUGGINGFACE_TOKEN" not in st.secrets:
         return "❌ HUGGINGFACE_TOKEN manquant dans Streamlit Secrets."
+def generate_ai_module_analysis(module_name, context):
+    prompt = f"""
+Tu es un expert qualité automobile.
 
+Module analysé : {module_name}
+
+Données :
+{context}
+
+Réponds uniquement en français avec ce format :
+
+INTERPRÉTATION :
+- ...
+
+ACTIONS RECOMMANDÉES :
+- ...
+- ...
+- ...
+
+Sois clair, professionnel et concret.
+"""
+
+    return ask_hf_ai(prompt)
     try:
         client = InferenceClient(token=st.secrets["HUGGINGFACE_TOKEN"])
 
@@ -759,7 +781,21 @@ elif page_clean == "MSA":
         "Stability",
         "Attribute MSA"
     ])
+st.markdown("### 🤖 Interprétation IA")
 
+context_msa = f"""
+Type analyse : MSA
+Référence = {ref:.4f}
+Tolérance = {tolerance:.4f}
+Cg = {cg:.2f}
+Cgk = {cgk:.2f}
+Nombre de mesures MSA = {len(msa_data)}
+"""
+
+with st.spinner("🤖 Analyse IA MSA..."):
+    ai_msa = generate_ai_module_analysis("MSA", context_msa)
+
+st.info(ai_msa)
     # =========================
     # 1. MSA TYPE 1
     # =========================
@@ -1014,7 +1050,25 @@ elif page_clean == "SPC":
         "Machine / Opérateur",
         "Interprétation"
     ])
+st.markdown("### 🤖 Interprétation IA")
 
+out_control_count = len(spc_work[spc_work["Hors_Controle"]])
+
+context_spc = f"""
+Type analyse : SPC
+Moyenne SPC = {mean_spc:.4f}
+Écart-type SPC = {std_spc:.6f}
+UCL = {ucl:.4f}
+LCL = {lcl:.4f}
+Points hors contrôle = {out_control_count}
+Cp = {cp:.2f}
+Cpk = {cpk:.2f}
+"""
+
+with st.spinner("🤖 Analyse IA SPC..."):
+    ai_spc = generate_ai_module_analysis("SPC", context_spc)
+
+st.info(ai_spc)
     mean_spc = spc_data["Measurement"].mean()
     std_spc = spc_data["Measurement"].std()
 
@@ -1318,7 +1372,28 @@ elif page_clean == "Capabilité":
         "Machine / Opérateur",
         "Interprétation"
     ])
+st.markdown("### 🤖 Interprétation IA")
 
+target = (usl + lsl) / 2
+decentrage = mean_val - target
+
+context_cap = f"""
+Type analyse : Capabilité
+Moyenne = {mean_val:.4f}
+Écart-type = {std_val:.6f}
+USL / LS = {usl:.4f}
+LSL / LI = {lsl:.4f}
+Cible = {target:.4f}
+Décalage = {decentrage:.6f}
+Cp = {cp:.2f}
+Cpk = {cpk:.2f}
+Nombre de mesures = {total}
+"""
+
+with st.spinner("🤖 Analyse IA Capabilité..."):
+    ai_cap = generate_ai_module_analysis("Capabilité", context_cap)
+
+st.info(ai_cap)
     # =========================
     # 1. INDICES CP / CPK
     # =========================
@@ -1620,7 +1695,26 @@ elif page_clean == "AMDEC":
         "Severity": "Gravité",
         "Detection": "Détection"
     })
+st.markdown("### 🤖 Interprétation IA")
 
+max_rpn = fmea["RPN"].max()
+top_risk = fmea.iloc[0]
+
+context_amdec = f"""
+Type analyse : AMDEC
+RPN maximum = {int(max_rpn)}
+Défaut principal = {top_risk["Defect_Type"]}
+Gravité = {top_risk["Severity"]}
+Occurrence = {top_risk["Occurrence"]}
+Détection = {top_risk["Detection"]}
+Statut = {top_risk["Statut"]}
+Action actuelle = {top_risk["Action"]}
+"""
+
+with st.spinner("🤖 Analyse IA AMDEC..."):
+    ai_amdec = generate_ai_module_analysis("AMDEC", context_amdec)
+
+st.info(ai_amdec)
     st.dataframe(table_fmea, use_container_width=True, hide_index=True)
 
     st.markdown("### 🧠 Interprétation détaillée")
