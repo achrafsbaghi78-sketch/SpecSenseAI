@@ -796,7 +796,7 @@ with st.spinner("🤖 Analyse IA MSA..."):
     ai_msa = generate_ai_module_analysis("MSA", context_msa)
 
 st.info(ai_msa)
-    elif page_clean == "MSA":
+ elif page_clean == "MSA":
     st.subheader("📏 Module MSA complet")
 
     tab_msa1, tab_grr, tab_bias, tab_linearity, tab_stability, tab_attribute = st.tabs([
