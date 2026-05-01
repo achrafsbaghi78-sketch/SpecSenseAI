@@ -796,6 +796,18 @@ with st.spinner("🤖 Analyse IA MSA..."):
     ai_msa = generate_ai_module_analysis("MSA", context_msa)
 
 st.info(ai_msa)
+    elif page_clean == "MSA":
+    st.subheader("📏 Module MSA complet")
+
+    tab_msa1, tab_grr, tab_bias, tab_linearity, tab_stability, tab_attribute = st.tabs([
+        "MSA Type 1",
+        "Gage R&R",
+        "Bias",
+        "Linearity",
+        "Stability",
+        "Attribute MSA"
+    ])
+
     # =========================
     # 1. MSA TYPE 1
     # =========================
@@ -824,9 +836,15 @@ st.info(ai_msa)
                 mode="lines+markers",
                 name="Mesures MSA"
             ))
+
             fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
             fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
-            fig.update_layout(title="Carte MSA Type 1", template="plotly_dark", height=430)
+
+            fig.update_layout(
+                title="Carte MSA Type 1",
+                template="plotly_dark",
+                height=430
+            )
 
             st.plotly_chart(fig, use_container_width=True)
 
