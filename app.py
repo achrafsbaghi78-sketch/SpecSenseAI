@@ -703,9 +703,18 @@ elif page_clean == "SPC":
             segment = values[i:i + 6]
             increasing = all(segment[j] < segment[j + 1] for j in range(5))
             decreasing = all(segment[j] > segment[j + 1] for j in range(5))
-            if increasing or decreasing:
-    trend_detected = True
-    break
+            trend_detected = False
+
+if len(values) >= 6:
+    for i in range(len(values) - 5):
+        segment = values[i:i + 6]
+
+        increasing = all(segment[j] < segment[j + 1] for j in range(5))
+        decreasing = all(segment[j] > segment[j + 1] for j in range(5))
+
+        if increasing or decreasing:
+            trend_detected = True
+            break
     st.subheader("📉 Module SPC complet")
 
     mean_spc = spc_data["Measurement"].mean()
