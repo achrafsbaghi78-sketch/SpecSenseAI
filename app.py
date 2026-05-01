@@ -704,7 +704,8 @@ elif page_clean == "SPC":
             increasing = all(segment[j] < segment[j + 1] for j in range(5))
             decreasing = all(segment[j] > segment[j + 1] for j in range(5))
             if increasing or decreasing:
-elif page_clean == "SPC":
+    trend_detected = True
+    break
     st.subheader("📉 Module SPC complet")
 
     mean_spc = spc_data["Measurement"].mean()
