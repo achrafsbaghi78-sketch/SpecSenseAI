@@ -705,6 +705,9 @@ elif page_clean == "SPC":
             decreasing = all(segment[j] > segment[j + 1] for j in range(5))
             trend_detected = False
 values = spc_work["Measurement"].tolist()
+
+trend_detected = False
+
 if len(values) >= 6:
     for i in range(len(values) - 5):
         segment = values[i:i + 6]
