@@ -399,19 +399,7 @@ Nombre total de mesures = {total}
 # =========================
 # MSA
 # =========================
-elif page_clean == "MSA":
-    st.subheader("📏 Module MSA complet")
-
-    tab_msa1, tab_grr, tab_bias, tab_linearity, tab_stability, tab_attribute = st.tabs([
-        "MSA Type 1",
-        "Gage R&R",
-        "Bias",
-        "Linearity",
-        "Stability",
-        "Attribute MSA"
-    ])
-
-    with tab_msa1:
+ with tab_msa1:
         st.markdown("### 📏 MSA Type 1")
 
         if len(msa_data) > 0:
@@ -624,6 +612,7 @@ NOK = {nok_count}
 Nombre total = {len(df_attr)}
 """
         show_ai_analysis("Attribute MSA", context_attribute)
+
 
 
 # =========================
