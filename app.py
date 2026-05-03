@@ -401,9 +401,9 @@ def page_msa(df: pd.DataFrame, metrics: dict) -> None:
     usl = metrics["usl"]
     lsl = metrics["lsl"]
 
-    tab_msa1, tab_grr, tab_bias, tab_linearity, tab_stability, tab_attribute = st.tabs(
-        ["MSA Type 1", "Gage R&R", "Bias", "Linearity", "Stability", "Attribute MSA"]
-    )
+   tab_summary, tab_msa1, tab_grr, tab_bias, tab_stability, tab_linearity, tab_attribute = st.tabs(
+    ["Résumé", "Type 1", "Gage R&R", "Bias", "Stability", "Linearity", "Attribute MSA"]
+)
 
     with tab_msa1:
         st.markdown("### 📏 MSA Type 1")
@@ -423,7 +423,19 @@ def page_msa(df: pd.DataFrame, metrics: dict) -> None:
         c2.metric("Tolérance", f"{tolerance:.4f}")
         c3.metric("Cg", f"{cg:.2f}")
         c4.metric("Cgk", f"{cgk:.2f}")
+if cgk < 1:
+    st.error("❌ Système de mesure NON acceptable (Cgk < 1)")
+elif cgk < 1.33:
+    st.warning("⚠️ Système limite (amélioration recommandée)")
+else:
+    st.success("✅ Système de mesure acceptable")
 
+st.markdown("""
+**Lecture rapide:**
+- Cg ≥ 1.33 → répétabilité correcte
+- Cgk ≥ 1.33 → système fiable
+- Cgk < 1 → système NON fiable
+""")
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=list(range(1, len(msa_data) + 1)), y=msa_data["Measurement"], mode="lines+markers", name="Mesures MSA"))
         fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
