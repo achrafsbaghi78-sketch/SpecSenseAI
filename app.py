@@ -930,10 +930,12 @@ def main() -> None:
         st.error("❌ Aucune donnée disponible.")
         st.stop()
 
+  try:
     metrics = prepare_data(df)
-    page = render_sidebar(metrics)
-    render_header()
-    render_global_kpis(metrics)
+except Exception as exc:
+    st.error("Erreur dans prepare_data")
+    st.exception(exc)
+    st.stop()
 
     if page == "Tableau de bord":
         page_dashboard(df, metrics)
