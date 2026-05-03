@@ -655,24 +655,18 @@ st.markdown("""
 - Tendance → dérive du process
 - Runs → biais du process
 """)
-     tab_control, tab_rules, tab_distribution, tab_capability, tab_machine, tab_ai = st.tabs(
-    ["Carte de contrôle", "Règles SPC", "Distribution", "Capabilité", "Machine / Opérateur", "Interprétation IA"]
-)
+  def page_spc(metrics: dict) -> None:
+    st.subheader("📉 Module SPC complet")
 
-with tab_control:
-    st.markdown("### 📈 Carte de contrôle")
+    spc_data = metrics["spc_data"]
+    usl = metrics["usl"]
+    lsl = metrics["lsl"]
 
-    out_control = spc_work[spc_work["Hors_Controle"]]
+    mean_spc = float(spc_data["Measurement"].mean())
 
-    if not out_control.empty:
-        st.error(f"❌ {len(out_control)} point(s) hors contrôle")
-        st.dataframe(out_control, use_container_width=True, hide_index=True)
-    else:
-        st.success("✅ Aucun point hors contrôle")
-
-with tab_rules:
-    st.markdown("### 🚦 Règles SPC")
-
+    tab_control, tab_rules, tab_distribution, tab_capability, tab_machine, tab_ai = st.tabs(
+        ["Carte de contrôle", "Règles SPC", "Distribution", "Capabilité", "Machine / Opérateur", "Interprétation IA"]
+    )
         values = spc_work["Measurement"].dropna().tolist()
         out_control = spc_work[spc_work["Hors_Controle"]]
 
