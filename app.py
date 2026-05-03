@@ -399,7 +399,7 @@ def page_msa(df: pd.DataFrame, metrics: dict) -> None:
     usl = metrics["usl"]
     lsl = metrics["lsl"]
 
-       tab_summary, tab_msa1, tab_grr, tab_bias, tab_stability, tab_linearity, tab_attribute = st.tabs(
+    tab_summary, tab_msa1, tab_grr, tab_bias, tab_stability, tab_linearity, tab_attribute = st.tabs(
         ["Résumé", "Type 1", "Gage R&R", "Bias", "Stability", "Linearity", "Attribute MSA"]
     )
 
