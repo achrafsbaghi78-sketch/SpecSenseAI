@@ -660,13 +660,11 @@ if st.button("Générer le rapport PDF"):
 
 st.markdown("---")
 st.caption("SpecSense AI V1.0 | Qualité 4.0 | Inspiré IATF 16949")
+st.markdown("""
+<style>
 @media (max-width: 768px) {
     .block-container {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-    div[data-testid="stMetricValue"] {
-        font-size: 34px !important;
+        padding: 1rem !important;
     }
 }
 </style>
