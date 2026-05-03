@@ -605,40 +605,76 @@ def page_spc(metrics: dict) -> None:
         else:
             st.success("✅ Aucun point hors contrôle")
 
-    with tab_rules:
+        with tab_rules:
         st.markdown("### 🚦 Règles SPC")
-        out_control = spc_work[spc_work["Hors_Controle"]]
-        rule1 = len(out_control)
 
         values = spc_work["Measurement"].dropna().tolist()
-        rule2 = False
+        out_control = spc_work[spc_work["Hors_Controle"]]
+
+        rule_1 = len(out_control)
+
+        rule_2 = False
         if len(values) >= 7:
             above = [v > mean_spc for v in values]
             current_run = 1
             max_run = 1
+
             for i in range(1, len(above)):
                 if above[i] == above[i - 1]:
                     current_run += 1
                     max_run = max(max_run, current_run)
                 else:
                     current_run = 1
-            rule2 = max_run >= 7
 
-        trend_detected = False
+            rule_2 = max_run >= 7
+
+        rule_3 = False
         if len(values) >= 6:
             for i in range(len(values) - 5):
-                segment = values[i : i + 6]
+                segment = values[i:i + 6]
                 increasing = all(segment[j] < segment[j + 1] for j in range(5))
                 decreasing = all(segment[j] > segment[j + 1] for j in range(5))
+
                 if increasing or decreasing:
-                    trend_detected = True
+                    rule_3 = True
+                    break
+
+        sigma_1_upper = mean_spc + std_spc
+        sigma_1_lower = mean_spc - std_spc
+        sigma_2_upper = mean_spc + 2 * std_spc
+        sigma_2_lower = mean_spc - 2 * std_spc
+
+        rule_4 = False
+        if len(values) >= 3:
+            for i in range(len(values) - 2):
+                segment = values[i:i + 3]
+                high = sum(v > sigma_2_upper for v in segment)
+                low = sum(v < sigma_2_lower for v in segment)
+
+                if high >= 2 or low >= 2:
+                    rule_4 = True
+                    break
+
+        rule_5 = False
+        if len(values) >= 5:
+            for i in range(len(values) - 4):
+                segment = values[i:i + 5]
+                high = sum(v > sigma_1_upper for v in segment)
+                low = sum(v < sigma_1_lower for v in segment)
+
+                if high >= 4 or low >= 4:
+                    rule_5 = True
                     break
 
         r1, r2, r3 = st.columns(3)
-        r1.error(f"❌ {rule1} point(s) hors contrôle") if rule1 > 0 else r1.success("✅ Règle 1 OK")
-        r2.warning("⚠️ 7 points du même côté") if rule2 else r2.success("✅ Règle 2 OK")
-        r3.warning("⚠️ Tendance détectée") if trend_detected else r3.success("✅ Règle 3 OK")
+        r4, r5, r6 = st.columns(3)
 
+        r1.error(f"❌ {rule_1} point(s) hors contrôle") if rule_1 > 0 else r1.success("✅ Hors limites OK")
+        r2.warning("⚠️ 7 points du même côté") if rule_2 else r2.success("✅ Runs OK")
+        r3.warning("⚠️ Tendance 6 points") if rule_3 else r3.success("✅ Tendance OK")
+        r4.warning("⚠️ 2/3 points au-delà de 2σ") if rule_4 else r4.success("✅ 2σ OK")
+        r5.warning("⚠️ 4/5 points au-delà de 1σ") if rule_5 else r5.success("✅ 1σ OK")
+        r6.info("📌 SPC rules activées")
     with tab_distribution:
         st.markdown("### 📊 Distribution")
         fig = px.histogram(spc_work, x="Measurement", nbins=25, title="Histogramme SPC", template="plotly_dark")
