@@ -423,6 +423,7 @@ elif page_clean == "SPC":
                 else:
                     current_run = 1
             rule2 = max_run >= 7
+            values = spc_work["Measurement"].tolist()
         trend_detected = False
         if len(values) >= 6:
             for i in range(len(values) - 5):
