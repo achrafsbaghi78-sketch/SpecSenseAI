@@ -10,7 +10,6 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer
 
-
 # =========================
 # PAGE CONFIG
 # =========================
