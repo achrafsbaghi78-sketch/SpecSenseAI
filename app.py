@@ -946,7 +946,7 @@ if page_clean == "Tableau de bord":
         fig.add_hline(y=lsl, line_dash="dot", annotation_text="LSL")
         fig.update_layout(template="plotly_dark", height=420)
 
-        st.plotly_chart(fig, use_container_width=True)
+  st.plotly_chart(fig, use_container_width=True, key="spc_distribution")
 
     with col_b:
         st.markdown("### 🎯 Distribution")
