@@ -638,24 +638,7 @@ def page_spc(metrics: dict) -> None:
         fig.add_hline(y=lsl, line_dash="dot", annotation_text="LSL")
         fig.update_layout(title="Carte de contrôle SPC", template="plotly_dark", height=460)
         plot_chart(fig, "spc_control_chart")
-# =========================
-# INTERPRÉTATION SPC
-# =========================
-
-out_control = spc_work[spc_work["Hors_Controle"]]
-
-if len(out_control) > 0:
-    st.error("❌ Processus INSTABLE (points hors contrôle)")
-else:
-    st.success("✅ Processus stable (aucun point hors contrôle)")
-
-st.markdown("""
-**Lecture rapide:**
-- Points hors UCL/LCL → instabilité
-- Tendance → dérive du process
-- Runs → biais du process
-""")
-  def page_spc(metrics: dict) -> None:
+    def page_spc(metrics: dict) -> None:
     st.subheader("📉 Module SPC complet")
 
     spc_data = metrics["spc_data"]
@@ -663,10 +646,63 @@ st.markdown("""
     lsl = metrics["lsl"]
 
     mean_spc = float(spc_data["Measurement"].mean())
+    std_spc = safe_std(spc_data["Measurement"])
+    ucl = mean_spc + 3 * std_spc
+    lcl = mean_spc - 3 * std_spc
+
+    spc_work = spc_data.copy().reset_index(drop=True)
+    spc_work["Point"] = range(1, len(spc_work) + 1)
+    spc_work["Hors_Controle"] = (
+        (spc_work["Measurement"] > ucl) |
+        (spc_work["Measurement"] < lcl)
+    )
 
     tab_control, tab_rules, tab_distribution, tab_capability, tab_machine, tab_ai = st.tabs(
         ["Carte de contrôle", "Règles SPC", "Distribution", "Capabilité", "Machine / Opérateur", "Interprétation IA"]
     )
+
+    with tab_control:
+        st.markdown("### 📈 Carte de contrôle")
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("CL", f"{mean_spc:.4f}")
+        c2.metric("UCL", f"{ucl:.4f}")
+        c3.metric("LCL", f"{lcl:.4f}")
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=spc_work["Point"],
+            y=spc_work["Measurement"],
+            mode="lines+markers",
+            name="Mesures"
+        ))
+        fig.add_hline(y=mean_spc, line_dash="dash", annotation_text="CL")
+        fig.add_hline(y=ucl, line_dash="dash", annotation_text="UCL")
+        fig.add_hline(y=lcl, line_dash="dash", annotation_text="LCL")
+        fig.add_hline(y=usl, line_dash="dot", annotation_text="USL")
+        fig.add_hline(y=lsl, line_dash="dot", annotation_text="LSL")
+        fig.update_layout(title="Carte de contrôle SPC", template="plotly_dark", height=460)
+
+        plot_chart(fig, "spc_control_chart")
+
+        out_control = spc_work[spc_work["Hors_Controle"]]
+
+        if not out_control.empty:
+            st.error("❌ Processus INSTABLE : points hors contrôle")
+            st.dataframe(out_control, use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ Processus stable : aucun point hors contrôle")
+
+        st.markdown("""
+**Lecture rapide:**
+- Points hors UCL/LCL → instabilité
+- Tendance → dérive du process
+- Runs → biais du process
+""")
+
+    with tab_rules:
+        st.markdown("### 🚦 Règles SPC")
+
         values = spc_work["Measurement"].dropna().tolist()
         out_control = spc_work[spc_work["Hors_Controle"]]
 
@@ -734,31 +770,42 @@ st.markdown("""
         r4.warning("⚠️ 2/3 points au-delà de 2σ") if rule_4 else r4.success("✅ 2σ OK")
         r5.warning("⚠️ 4/5 points au-delà de 1σ") if rule_5 else r5.success("✅ 1σ OK")
         r6.info("📌 SPC rules activées")
+
     with tab_distribution:
         st.markdown("### 📊 Distribution")
-        fig = px.histogram(spc_work, x="Measurement", nbins=25, title="Histogramme SPC", template="plotly_dark")
+
+        fig = px.histogram(
+            spc_work,
+            x="Measurement",
+            nbins=25,
+            title="Histogramme SPC",
+            template="plotly_dark"
+        )
         fig.add_vline(x=mean_spc, line_dash="dot", annotation_text="Moyenne")
         fig.add_vline(x=usl, line_dash="dash", annotation_text="USL")
         fig.add_vline(x=lsl, line_dash="dash", annotation_text="LSL")
+
         plot_chart(fig, "spc_distribution_hist")
 
     with tab_capability:
         st.markdown("### 🎯 Capabilité SPC")
+
+        cpk = metrics["cpk"]
+
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("USL", f"{usl:.4f}")
         c2.metric("LSL", f"{lsl:.4f}")
         c3.metric("Cp", f"{metrics['cp']:.2f}")
-        c4.metric("Cpk", f"{metrics['cpk']:.2f}")
-      cpk = metrics["cpk"]
+        c4.metric("Cpk", f"{cpk:.2f}")
 
-if cpk < 1:
-    st.error("❌ Processus NON capable")
-elif cpk < 1.33:
-    st.warning("⚠️ Processus limite")
-else:
-    st.success("✅ Processus capable")
+        if cpk < 1:
+            st.error("❌ Processus NON capable")
+        elif cpk < 1.33:
+            st.warning("⚠️ Processus limite")
+        else:
+            st.success("✅ Processus capable")
 
-st.markdown("""
+        st.markdown("""
 **Lecture rapide:**
 - Cpk < 1 → rejet client probable
 - 1 ≤ Cpk < 1.33 → risque qualité
@@ -767,27 +814,38 @@ st.markdown("""
 
     with tab_machine:
         st.markdown("### 🏭 Machine / Opérateur")
+
         col_m, col_o = st.columns(2)
 
         with col_m:
-            if "Machine" in spc_work.columns:
-                machine_stats = spc_work.groupby("Machine")["Measurement"].agg(["count", "mean", "std"]).reset_index()
-                machine_stats.columns = ["Machine", "Nombre", "Moyenne", "Écart-type"]
-                st.dataframe(machine_stats, use_container_width=True, hide_index=True)
-                fig = px.box(spc_work, x="Machine", y="Measurement", color="Machine", template="plotly_dark", title="Variation par machine")
-                plot_chart(fig, "spc_machine_box")
-            else:
-                st.warning("Colonne Machine introuvable")
+            machine_stats = spc_work.groupby("Machine")["Measurement"].agg(["count", "mean", "std"]).reset_index()
+            machine_stats.columns = ["Machine", "Nombre", "Moyenne", "Écart-type"]
+            st.dataframe(machine_stats, use_container_width=True, hide_index=True)
+
+            fig = px.box(
+                spc_work,
+                x="Machine",
+                y="Measurement",
+                color="Machine",
+                template="plotly_dark",
+                title="Variation par machine"
+            )
+            plot_chart(fig, "spc_machine_box")
 
         with col_o:
-            if "Operator" in spc_work.columns:
-                operator_stats = spc_work.groupby("Operator")["Measurement"].agg(["count", "mean", "std"]).reset_index()
-                operator_stats.columns = ["Opérateur", "Nombre", "Moyenne", "Écart-type"]
-                st.dataframe(operator_stats, use_container_width=True, hide_index=True)
-                fig = px.box(spc_work, x="Operator", y="Measurement", color="Operator", template="plotly_dark", title="Variation par opérateur")
-                plot_chart(fig, "spc_operator_box")
-            else:
-                st.warning("Colonne Operator introuvable")
+            operator_stats = spc_work.groupby("Operator")["Measurement"].agg(["count", "mean", "std"]).reset_index()
+            operator_stats.columns = ["Opérateur", "Nombre", "Moyenne", "Écart-type"]
+            st.dataframe(operator_stats, use_container_width=True, hide_index=True)
+
+            fig = px.box(
+                spc_work,
+                x="Operator",
+                y="Measurement",
+                color="Operator",
+                template="plotly_dark",
+                title="Variation par opérateur"
+            )
+            plot_chart(fig, "spc_operator_box")
 
     with tab_ai:
         context = f"""
