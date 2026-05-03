@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 from typing import Optional
-
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
