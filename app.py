@@ -656,15 +656,16 @@ st.markdown("""
 - Runs → biais du process
 """)
         with tab_control:
-         spc_work[spc_work["Hors_Controle"]]
-        if not out_control.empty:
-            st.error(f"❌ {len(out_control)} point(s) hors contrôle")
-            st.dataframe(out_control, use_container_width=True, hide_index=True)
-        else:
-            st.success("✅ Aucun point hors contrôle")
+    st.markdown("### 📈 Carte de contrôle")
 
-        with tab_rules:
-            st.markdown("### 🚦 Règles SPC")
+    # حساب points hors contrôle
+    out_control = spc_work[spc_work["Hors_Controle"]]
+
+    if not out_control.empty:
+        st.error(f"❌ {len(out_control)} point(s) hors contrôle")
+        st.dataframe(out_control, use_container_width=True, hide_index=True)
+    else:
+        st.success("✅ Aucun point hors contrôle")
 
         values = spc_work["Measurement"].dropna().tolist()
         out_control = spc_work[spc_work["Hors_Controle"]]
