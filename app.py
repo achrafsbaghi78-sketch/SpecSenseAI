@@ -655,10 +655,13 @@ st.markdown("""
 - Tendance → dérive du process
 - Runs → biais du process
 """)
-        with tab_control:
+     tab_control, tab_rules, tab_distribution, tab_capability, tab_machine, tab_ai = st.tabs(
+    ["Carte de contrôle", "Règles SPC", "Distribution", "Capabilité", "Machine / Opérateur", "Interprétation IA"]
+)
+
+with tab_control:
     st.markdown("### 📈 Carte de contrôle")
 
-    # حساب points hors contrôle
     out_control = spc_work[spc_work["Hors_Controle"]]
 
     if not out_control.empty:
@@ -666,6 +669,9 @@ st.markdown("""
         st.dataframe(out_control, use_container_width=True, hide_index=True)
     else:
         st.success("✅ Aucun point hors contrôle")
+
+with tab_rules:
+    st.markdown("### 🚦 Règles SPC")
 
         values = spc_work["Measurement"].dropna().tolist()
         out_control = spc_work[spc_work["Hors_Controle"]]
