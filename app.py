@@ -638,7 +638,23 @@ def page_spc(metrics: dict) -> None:
         fig.add_hline(y=lsl, line_dash="dot", annotation_text="LSL")
         fig.update_layout(title="Carte de contrôle SPC", template="plotly_dark", height=460)
         plot_chart(fig, "spc_control_chart")
+# =========================
+# INTERPRÉTATION SPC
+# =========================
 
+out_control = spc_work[spc_work["Hors_Controle"]]
+
+if len(out_control) > 0:
+    st.error("❌ Processus INSTABLE (points hors contrôle)")
+else:
+    st.success("✅ Processus stable (aucun point hors contrôle)")
+
+st.markdown("""
+**Lecture rapide:**
+- Points hors UCL/LCL → instabilité
+- Tendance → dérive du process
+- Runs → biais du process
+""")
         out_control = spc_work[spc_work["Hors_Controle"]]
         if not out_control.empty:
             st.error(f"❌ {len(out_control)} point(s) hors contrôle")
