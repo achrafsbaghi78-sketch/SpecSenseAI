@@ -870,19 +870,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    page = st.radio(
-        "",
-        [
-            "🏠 Tableau de bord",
-            "📏 MSA",
-            "📉 SPC",
-            "🎯 Capabilité",
-            "📊 Pareto",
-            "⚠️ AMDEC",
-            "🤖 IA"
-        ],
-        label_visibility="collapsed"
-    )
+  
 
     st.markdown("---")
     st.markdown("### 📌 Indicateurs")
