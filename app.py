@@ -208,11 +208,8 @@ def show_ai_analysis(module_name: str, context: str) -> None:
 # DATA
 # =========================
 @st.cache_data(ttl=60)
-def load_data_from_google() -> pd.DataFrame:
-    return pd.read_csv(G_SHEET_URL)
-
-
-def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
+def load_data() -> pd.DataFrame:
+    df = pd.read_csv(G_SHEET_URL)
     df.columns = df.columns.str.strip()
 
     missing_cols = [col for col in REQUIRED_COLS if col not in df.columns]
@@ -233,21 +230,7 @@ def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def load_data() -> pd.DataFrame:
-    uploaded_file = st.sidebar.file_uploader(
-        "📤 Upload CSV",
-        type=["csv"],
-        key="csv_uploader"
-    )
-
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        st.sidebar.success("CSV chargé ✅")
-    else:
-        df = load_data_from_google()
-        st.sidebar.info("Google Sheet chargé ✅")
-
-    return validate_and_clean_data(df)
+def prepare_data(df: pd.DataFrame) -> dict:
     msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
     spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", case=False, na=False)].copy()
 
@@ -930,11 +913,11 @@ def main() -> None:
         st.error("❌ Aucune donnée disponible.")
         st.stop()
 
-        metrics = prepare_data(df)
-    except Exception as exc:
-        st.error("Erreur dans prepare_data")
-        st.exception(exc)
-        st.stop()
+    metrics = prepare_data(df)
+    page = render_sidebar(metrics)
+    render_header()
+    render_global_kpis(metrics)
+
     if page == "Tableau de bord":
         page_dashboard(df, metrics)
     elif page == "MSA":
