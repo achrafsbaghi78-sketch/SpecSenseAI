@@ -208,8 +208,11 @@ def show_ai_analysis(module_name: str, context: str) -> None:
 # DATA
 # =========================
 @st.cache_data(ttl=60)
-def load_data() -> pd.DataFrame:
-    df = pd.read_csv(G_SHEET_URL)
+def load_data_from_google() -> pd.DataFrame:
+    return pd.read_csv(G_SHEET_URL)
+
+
+def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = df.columns.str.strip()
 
     missing_cols = [col for col in REQUIRED_COLS if col not in df.columns]
@@ -230,7 +233,21 @@ def load_data() -> pd.DataFrame:
     return df
 
 
-def prepare_data(df: pd.DataFrame) -> dict:
+def load_data() -> pd.DataFrame:
+    uploaded_file = st.sidebar.file_uploader(
+        "📤 Upload CSV",
+        type=["csv"],
+        key="csv_uploader"
+    )
+
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        st.sidebar.success("CSV chargé ✅")
+    else:
+        df = load_data_from_google()
+        st.sidebar.info("Google Sheet chargé ✅")
+
+    return validate_and_clean_data(df)
     msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
     spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", case=False, na=False)].copy()
 
