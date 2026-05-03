@@ -930,7 +930,6 @@ def main() -> None:
         st.error("❌ Aucune donnée disponible.")
         st.stop()
 
-     try:
         metrics = prepare_data(df)
     except Exception as exc:
         st.error("Erreur dans prepare_data")
