@@ -399,47 +399,78 @@ def page_msa(df: pd.DataFrame, metrics: dict) -> None:
     usl = metrics["usl"]
     lsl = metrics["lsl"]
 
-   tab_summary, tab_msa1, tab_grr, tab_bias, tab_stability, tab_linearity, tab_attribute = st.tabs(
-    ["Résumé", "Type 1", "Gage R&R", "Bias", "Stability", "Linearity", "Attribute MSA"]
-)
+       tab_summary, tab_msa1, tab_grr, tab_bias, tab_stability, tab_linearity, tab_attribute = st.tabs(
+        ["Résumé", "Type 1", "Gage R&R", "Bias", "Stability", "Linearity", "Attribute MSA"]
+    )
+
+    with tab_summary:
+        st.markdown("### 📌 Résumé MSA")
+        st.info("MSA sert à vérifier si le système de mesure est fiable avant de juger le processus.")
+
+        if msa_data.empty:
+            st.warning("Aucune donnée MSA détectée. Ajoute des lignes avec Part_ID contenant MSA.")
+        else:
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Mesures MSA", len(msa_data))
+            c2.metric("Opérateurs", msa_data["Operator"].nunique())
+            c3.metric("Pièces", msa_data["Part_ID"].nunique())
+
+        st.markdown("""
+**Pourquoi cette étape est importante ?**
+- **Type 1** : vérifie la répétabilité d’un seul moyen de mesure.
+- **Gage R&R** : sépare la variation appareil / opérateur / pièce.
+- **Bias** : compare la mesure à une valeur de référence.
+- **Stability** : vérifie si le système dérive dans le temps.
+- **Linearity** : vérifie si le biais change selon le niveau de mesure.
+- **Attribute MSA** : utile pour les décisions OK / NOK.
+""")
 
     with tab_msa1:
         st.markdown("### 📏 MSA Type 1")
+
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
-            return
+        else:
+            mean_msa = float(msa_data["Measurement"].mean())
+            std_msa = safe_std(msa_data["Measurement"])
+            ref = (usl + lsl) / 2
+            tolerance = usl - lsl
+            cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
+            cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
 
-        mean_msa = float(msa_data["Measurement"].mean())
-        std_msa = safe_std(msa_data["Measurement"])
-        ref = (usl + lsl) / 2
-        tolerance = usl - lsl
-        cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
-        cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Référence", f"{ref:.4f}")
+            c2.metric("Tolérance", f"{tolerance:.4f}")
+            c3.metric("Cg", f"{cg:.2f}")
+            c4.metric("Cgk", f"{cgk:.2f}")
 
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Référence", f"{ref:.4f}")
-        c2.metric("Tolérance", f"{tolerance:.4f}")
-        c3.metric("Cg", f"{cg:.2f}")
-        c4.metric("Cgk", f"{cgk:.2f}")
-if cgk < 1:
-    st.error("❌ Système de mesure NON acceptable (Cgk < 1)")
-elif cgk < 1.33:
-    st.warning("⚠️ Système limite (amélioration recommandée)")
-else:
-    st.success("✅ Système de mesure acceptable")
+            if cgk < 1:
+                st.error("❌ Système de mesure NON acceptable (Cgk < 1)")
+            elif cgk < 1.33:
+                st.warning("⚠️ Système limite (amélioration recommandée)")
+            else:
+                st.success("✅ Système de mesure acceptable")
 
-st.markdown("""
+            st.markdown("""
 **Lecture rapide:**
 - Cg ≥ 1.33 → répétabilité correcte
 - Cgk ≥ 1.33 → système fiable
 - Cgk < 1 → système NON fiable
 """)
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=list(range(1, len(msa_data) + 1)), y=msa_data["Measurement"], mode="lines+markers", name="Mesures MSA"))
-        fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
-        fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
-        fig.update_layout(title="Carte MSA Type 1", template="plotly_dark", height=430)
-        plot_chart(fig, "msa_type1_chart")
+
+            fig = go.Figure()
+            fig.add_trace(
+                go.Scatter(
+                    x=list(range(1, len(msa_data) + 1)),
+                    y=msa_data["Measurement"],
+                    mode="lines+markers",
+                    name="Mesures MSA",
+                )
+            )
+            fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
+            fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
+            fig.update_layout(title="Carte MSA Type 1", template="plotly_dark", height=430)
+            plot_chart(fig, "msa_type1_chart")
 
         context = f"""
 Référence = {ref:.4f}
