@@ -606,7 +606,7 @@ def page_spc(metrics: dict) -> None:
             st.success("✅ Aucun point hors contrôle")
 
         with tab_rules:
-        st.markdown("### 🚦 Règles SPC")
+            st.markdown("### 🚦 Règles SPC")
 
         values = spc_work["Measurement"].dropna().tolist()
         out_control = spc_work[spc_work["Hors_Controle"]]
