@@ -655,7 +655,8 @@ st.markdown("""
 - Tendance → dérive du process
 - Runs → biais du process
 """)
-      out_control = spc_work[spc_work["Hors_Controle"]]
+     with tab_control:
+         spc_work[spc_work["Hors_Controle"]]
         if not out_control.empty:
             st.error(f"❌ {len(out_control)} point(s) hors contrôle")
             st.dataframe(out_control, use_container_width=True, hide_index=True)
