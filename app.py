@@ -639,7 +639,7 @@ def page_spc(metrics: dict) -> None:
         fig.update_layout(title="Carte de contrôle SPC", template="plotly_dark", height=460)
         plot_chart(fig, "spc_control_chart")
     def page_spc(metrics: dict) -> None:
-    st.subheader("📉 Module SPC complet")
+        st.subheader("📉 Module SPC complet")
 
     spc_data = metrics["spc_data"]
     usl = metrics["usl"]
