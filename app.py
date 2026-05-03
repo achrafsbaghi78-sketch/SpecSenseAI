@@ -747,7 +747,21 @@ st.markdown("""
         c2.metric("LSL", f"{lsl:.4f}")
         c3.metric("Cp", f"{metrics['cp']:.2f}")
         c4.metric("Cpk", f"{metrics['cpk']:.2f}")
-        process_status(metrics["cpk"])
+      cpk = metrics["cpk"]
+
+if cpk < 1:
+    st.error("❌ Processus NON capable")
+elif cpk < 1.33:
+    st.warning("⚠️ Processus limite")
+else:
+    st.success("✅ Processus capable")
+
+st.markdown("""
+**Lecture rapide:**
+- Cpk < 1 → rejet client probable
+- 1 ≤ Cpk < 1.33 → risque qualité
+- Cpk ≥ 1.33 → conforme industrie
+""")
 
     with tab_machine:
         st.markdown("### 🏭 Machine / Opérateur")
