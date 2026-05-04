@@ -220,7 +220,7 @@ def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
     missing_cols = [col for col in REQUIRED_COLS if col not in df.columns]
     if missing_cols:
         st.error(f"❌ Colonnes manquantes : {missing_cols}")
-    # st.stop()    st.stop()
+   return pd.DataFrame(columns=REQUIRED_COLS)
 
     for col in NUMERIC_COLS:
         df[col] = df[col].astype(str).str.replace(",", ".", regex=False).str.strip()
@@ -234,17 +234,15 @@ def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-
 def save_to_google_sheet(row: dict) -> None:
     try:
         requests.post(
-            G_SHEET_URL.replace("output=csv", "exec"),
+            G_SCRIPT_URL,
             json=row,
             timeout=5
         )
     except Exception:
         pass
-
 def prepare_data(df: pd.DataFrame) -> dict:
     msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
     spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", case=False, na=False)].copy()
