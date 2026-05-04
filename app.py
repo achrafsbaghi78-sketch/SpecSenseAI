@@ -213,14 +213,13 @@ def load_data() -> pd.DataFrame:
     df = pd.read_csv(G_SHEET_URL)
     return validate_and_clean_data(df)
 
-
 def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = df.columns.str.strip()
 
     missing_cols = [col for col in REQUIRED_COLS if col not in df.columns]
     if missing_cols:
         st.error(f"❌ Colonnes manquantes : {missing_cols}")
-   return pd.DataFrame(columns=REQUIRED_COLS)
+        return pd.DataFrame(columns=REQUIRED_COLS)
 
     for col in NUMERIC_COLS:
         df[col] = df[col].astype(str).str.replace(",", ".", regex=False).str.strip()
