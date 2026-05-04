@@ -1038,7 +1038,7 @@ def main() -> None:
         st.error("❌ Aucune donnée disponible.")
         st.stop()
 
-   metrics = prepare_data(df)
+metrics = prepare_data(df)
 
 page = render_sidebar(metrics)
 render_header()
