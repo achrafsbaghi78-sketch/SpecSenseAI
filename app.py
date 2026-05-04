@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from typing import Optional
+import requests
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -210,7 +211,15 @@ def show_ai_analysis(module_name: str, context: str) -> None:
 def load_data() -> pd.DataFrame:
     df = pd.read_csv(G_SHEET_URL)
     df.columns = df.columns.str.strip()
-
+def save_to_google_sheet(row: dict):
+    try:
+        requests.post(
+            G_SHEET_URL.replace("output=csv", "exec"),
+            json=row,
+            timeout=5
+        )
+    except Exception:
+        pass
     missing_cols = [col for col in REQUIRED_COLS if col not in df.columns]
     if missing_cols:
         st.error(f"❌ Colonnes manquantes : {missing_cols}")
