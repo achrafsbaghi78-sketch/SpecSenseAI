@@ -1050,12 +1050,15 @@ def main() -> None:
         st.write(exc)
         st.stop()
 
-    if df.empty:
-        st.warning("⚠️ Google Sheet vide — vous pouvez commencer à saisir des données.")
+if df.empty and "manual_data" not in st.session_state:
+    st.warning("⚠️ Google Sheet vide — commencez par saisir des données.")
+    page_saisie_mesures(df)
+    st.stop()
 
-    # دمج data اللي دخلها user
-    if "manual_data" in st.session_state:
-        df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
+if "manual_data" in st.session_state:
+    df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
+
+metrics = prepare_data(df)
 
     metrics = prepare_data(df)
 
