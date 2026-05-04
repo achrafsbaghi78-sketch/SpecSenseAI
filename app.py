@@ -210,16 +210,12 @@ def show_ai_analysis(module_name: str, context: str) -> None:
 @st.cache_data(ttl=60)
 def load_data() -> pd.DataFrame:
     df = pd.read_csv(G_SHEET_URL)
+    return validate_and_clean_data(df)
+
+
+def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = df.columns.str.strip()
-def save_to_google_sheet(row: dict):
-    try:
-        requests.post(
-            G_SHEET_URL.replace("output=csv", "exec"),
-            json=row,
-            timeout=5
-        )
-    except Exception:
-        pass
+
     missing_cols = [col for col in REQUIRED_COLS if col not in df.columns]
     if missing_cols:
         st.error(f"❌ Colonnes manquantes : {missing_cols}")
@@ -237,6 +233,16 @@ def save_to_google_sheet(row: dict):
 
     return df
 
+
+def save_to_google_sheet(row: dict) -> None:
+    try:
+        requests.post(
+            G_SHEET_URL.replace("output=csv", "exec"),
+            json=row,
+            timeout=5
+        )
+    except Exception:
+        pass
 
 def prepare_data(df: pd.DataFrame) -> dict:
     msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
