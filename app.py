@@ -1058,9 +1058,9 @@ if df.empty and "manual_data" not in st.session_state:
 if "manual_data" in st.session_state:
     df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
 
-metrics = prepare_data(df)
+   metrics = prepare_data(df)
 
-    metrics = prepare_data(df)
+   metrics = prepare_data(df)
 
     page = render_sidebar(metrics)
     render_header()
