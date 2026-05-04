@@ -1038,37 +1038,36 @@ def main() -> None:
         st.error("❌ Aucune donnée disponible.")
         st.stop()
 
-metrics = prepare_data(df)
-
-page = render_sidebar(metrics)
-render_header()
-render_global_kpis(metrics)
-
-# ROUTING
-if page == "Saisie Mesures":
-    df = page_saisie_mesures(df)
     metrics = prepare_data(df)
 
-elif page == "Tableau de bord":
-    page_dashboard(df, metrics)
+    page = render_sidebar(metrics)
+    render_header()
+    render_global_kpis(metrics)
 
-elif page == "MSA":
-    page_msa(df, metrics)
+    if page == "Saisie Mesures":
+        df = page_saisie_mesures(df)
+        metrics = prepare_data(df)
 
-elif page == "SPC":
-    page_spc(metrics)
+    elif page == "Tableau de bord":
+        page_dashboard(df, metrics)
 
-elif page == "Capabilité":
-    page_capability(df, metrics)
+    elif page == "MSA":
+        page_msa(df, metrics)
 
-elif page == "Pareto":
-    page_pareto(df)
+    elif page == "SPC":
+        page_spc(metrics)
 
-elif page == "AMDEC":
-    page_amdec(df)
+    elif page == "Capabilité":
+        page_capability(df, metrics)
 
-elif page == "IA":
-    page_ai(metrics)
+    elif page == "Pareto":
+        page_pareto(df)
+
+    elif page == "AMDEC":
+        page_amdec(df)
+
+    elif page == "IA":
+        page_ai(metrics)
 
     render_pdf_section(metrics)
     render_footer()
