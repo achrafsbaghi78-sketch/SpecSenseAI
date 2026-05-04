@@ -1043,7 +1043,6 @@ def main() -> None:
     inject_css()
 
     try:
-           try:
         df = load_data()
     except Exception as exc:
         st.error("🚨 Impossible de lire Google Sheet.")
@@ -1054,14 +1053,17 @@ def main() -> None:
         st.error("❌ Aucune donnée disponible.")
         st.stop()
 
+    # دمج data اللي دخلها user
     if "manual_data" in st.session_state:
         df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
 
     metrics = prepare_data(df)
+
     page = render_sidebar(metrics)
     render_header()
     render_global_kpis(metrics)
 
+    # ROUTING
     if page == "Saisie Mesures":
         df = page_saisie_mesures(df)
         metrics = prepare_data(df)
