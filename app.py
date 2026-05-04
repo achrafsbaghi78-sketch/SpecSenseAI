@@ -1052,7 +1052,8 @@ def main() -> None:
     if df.empty:
         st.error("❌ Aucune donnée disponible.")
         st.stop()
-
+if "manual_data" in st.session_state:
+    df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
     metrics = prepare_data(df)
 
     page = render_sidebar(metrics)
