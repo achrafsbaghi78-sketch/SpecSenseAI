@@ -355,6 +355,88 @@ def render_global_kpis(metrics: dict) -> None:
 # =========================
 # PAGES
 # =========================
+def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
+    st.subheader("➕ Saisie des mesures")
+
+    with st.form("form_mesures"):
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            data_type = st.selectbox("Type de données", ["SPC", "MSA"])
+            part_id = st.text_input("Référence / Part ID")
+            operator = st.text_input("Opérateur")
+
+        with col2:
+            machine = st.text_input("Machine", value="M1")
+            usl = st.number_input("USL", value=12.1000, format="%.4f")
+            lsl = st.number_input("LSL", value=11.9000, format="%.4f")
+
+        with col3:
+            mesure_1 = st.number_input("Mesure 1", format="%.4f")
+            mesure_2 = st.number_input("Mesure 2", format="%.4f")
+            mesure_3 = st.number_input("Mesure 3", format="%.4f")
+
+        submitted = st.form_submit_button("Enregistrer")
+
+    if submitted:
+        part_id_final = f"{data_type}_{part_id}"
+
+        new_rows = pd.DataFrame([
+            {
+                "Date_Time": datetime.now(),
+                "Part_ID": part_id_final,
+                "Operator": operator,
+                "Trial": 1,
+                "Measurement": mesure_1,
+                "USL": usl,
+                "LSL": lsl,
+                "Machine": machine,
+                "Defect_Type": "OK",
+                "Severity": 1,
+                "Occurrence": 1,
+                "Detection": 1,
+            },
+            {
+                "Date_Time": datetime.now(),
+                "Part_ID": part_id_final,
+                "Operator": operator,
+                "Trial": 2,
+                "Measurement": mesure_2,
+                "USL": usl,
+                "LSL": lsl,
+                "Machine": machine,
+                "Defect_Type": "OK",
+                "Severity": 1,
+                "Occurrence": 1,
+                "Detection": 1,
+            },
+            {
+                "Date_Time": datetime.now(),
+                "Part_ID": part_id_final,
+                "Operator": operator,
+                "Trial": 3,
+                "Measurement": mesure_3,
+                "USL": usl,
+                "LSL": lsl,
+                "Machine": machine,
+                "Defect_Type": "OK",
+                "Severity": 1,
+                "Occurrence": 1,
+                "Detection": 1,
+            },
+        ])
+
+        st.session_state["manual_data"] = pd.concat(
+            [st.session_state.get("manual_data", pd.DataFrame()), new_rows],
+            ignore_index=True,
+        )
+
+        st.success("✅ Mesures enregistrées")
+
+    if "manual_data" in st.session_state:
+        df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
+
+    return df
 def page_dashboard(df: pd.DataFrame, metrics: dict) -> None:
     st.subheader("🏠 Vue générale")
     col_a, col_b = st.columns(2)
