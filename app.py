@@ -1092,3 +1092,5 @@ def main() -> None:
         page_ai(metrics)
 
     render_footer()
+    if __name__ == "__main__":
+    main()
