@@ -1048,22 +1048,24 @@ def main() -> None:
     except Exception as exc:
         st.error("🚨 Impossible de lire Google Sheet.")
         st.write(exc)
-        st.stop()
+        return
+
     if df.empty and "manual_data" not in st.session_state:
         st.warning("⚠️ Google Sheet vide — commencez par saisir des données.")
         page_saisie_mesures(df)
-        st.stop()
+        return
 
     if "manual_data" in st.session_state:
         df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
 
     metrics = prepare_data(df)
 
-       page = render_sidebar(metrics)
+    page = render_sidebar(metrics)
+    st.write("PAGE:", page)
+
     render_header()
     render_global_kpis(metrics)
-       st.write("PAGE:", page)
-    # ROUTING
+
     if page == "Saisie Mesures":
         df = page_saisie_mesures(df)
         metrics = prepare_data(df)
@@ -1088,3 +1090,5 @@ def main() -> None:
 
     elif page == "IA":
         page_ai(metrics)
+
+    render_footer()
