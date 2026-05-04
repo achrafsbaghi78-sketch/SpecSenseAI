@@ -1058,7 +1058,6 @@ def main() -> None:
     metrics = prepare_data(df)
 
     page = render_sidebar(metrics)
-    st.write("PAGE:", page)
 
     render_header()
     render_global_kpis(metrics)
@@ -1089,5 +1088,7 @@ def main() -> None:
         page_ai(metrics)
 
     render_footer()
-    if __name__ == "__main__":
-         main()
+
+
+if __name__ == "__main__":
+    main()
