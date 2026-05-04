@@ -1042,7 +1042,11 @@ def main() -> None:
     page = render_sidebar(metrics)
     render_header()
     render_global_kpis(metrics)
-
+if page == "Saisie Mesures":
+    df = page_saisie_mesures(df)
+    metrics = prepare_data(df)
+elif page == "Tableau de bord":
+    page_dashboard(df, metrics)
     if page == "Tableau de bord":
         page_dashboard(df, metrics)
     elif page == "MSA":
