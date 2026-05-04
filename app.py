@@ -1093,4 +1093,4 @@ def main() -> None:
 
     render_footer()
     if __name__ == "__main__":
-    main()
+         main()
