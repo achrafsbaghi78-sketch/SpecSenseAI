@@ -1059,7 +1059,7 @@ def main() -> None:
 
     metrics = prepare_data(df)
 
-    page = render_sidebar(metrics)
+       page = render_sidebar(metrics)
     render_header()
     render_global_kpis(metrics)
        st.write("PAGE:", page)
