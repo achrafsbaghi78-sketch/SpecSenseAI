@@ -31,6 +31,7 @@ LOGO_PATH = "logo.png"
 PDF_PATH = "rapport_qualite_specsense.pdf"
 
 MENU_ITEMS = [
+    "➕ Saisie Mesures",
     "🏠 Tableau de bord",
     "📏 MSA",
     "📉 SPC",
