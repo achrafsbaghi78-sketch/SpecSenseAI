@@ -220,7 +220,7 @@ def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
     missing_cols = [col for col in REQUIRED_COLS if col not in df.columns]
     if missing_cols:
         st.error(f"❌ Colonnes manquantes : {missing_cols}")
-        st.stop()
+    # st.stop()    st.stop()
 
     for col in NUMERIC_COLS:
         df[col] = df[col].astype(str).str.replace(",", ".", regex=False).str.strip()
@@ -1062,7 +1062,7 @@ def main() -> None:
     page = render_sidebar(metrics)
     render_header()
     render_global_kpis(metrics)
-
+       st.write("PAGE:", page)
     # ROUTING
     if page == "Saisie Mesures":
         df = page_saisie_mesures(df)
