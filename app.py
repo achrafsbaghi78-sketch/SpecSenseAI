@@ -1050,9 +1050,8 @@ def main() -> None:
         st.write(exc)
         st.stop()
 
-    if df.empty:
-        st.error("❌ Aucune donnée disponible.")
-        st.stop()
+  if df.empty:
+    st.warning("⚠️ Google Sheet vide — vous pouvez commencer à saisir des données.")
 
     # دمج data اللي دخلها user
     if "manual_data" in st.session_state:
