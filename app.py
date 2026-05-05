@@ -476,8 +476,8 @@ st.session_state["manual_data"] = pd.concat(
 
 st.success("✅ Mesures enregistrées")
 
-    if "manual_data" in st.session_state:
-        df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
+       if "manual_data" in st.session_state:
+             df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
 
     return df
 def page_dashboard(df: pd.DataFrame, metrics: dict) -> None:
