@@ -466,13 +466,15 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
                 "Detection": 1,
             },
         ])
+for _, row in new_rows.iterrows():
+    save_to_google_sheet(row.to_dict())
 
-        st.session_state["manual_data"] = pd.concat(
-            [st.session_state.get("manual_data", pd.DataFrame()), new_rows],
-            ignore_index=True,
-        )
+st.session_state["manual_data"] = pd.concat(
+    [st.session_state.get("manual_data", pd.DataFrame()), new_rows],
+    ignore_index=True,
+)
 
-        st.success("✅ Mesures enregistrées")
+st.success("✅ Mesures enregistrées")
 
     if "manual_data" in st.session_state:
         df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
