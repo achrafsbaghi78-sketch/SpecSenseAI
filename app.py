@@ -213,6 +213,7 @@ def load_data() -> pd.DataFrame:
     df = pd.read_csv(G_SHEET_URL)
     return validate_and_clean_data(df)
 
+
 def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = df.columns.str.strip()
 
@@ -233,6 +234,7 @@ def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+
 def save_to_google_sheet(row: dict) -> None:
     try:
         response = requests.post(
@@ -249,8 +251,28 @@ def save_to_google_sheet(row: dict) -> None:
     except Exception as e:
         st.error(f"❌ Erreur sauvegarde Google Sheet: {e}")
 
-    except Exception as e:
-        st.error(f"❌ Erreur sauvegarde Google Sheet: {e}")
+
+def prepare_data(df: pd.DataFrame) -> dict:
+    if df.empty:
+        return {
+            "msa_data": pd.DataFrame(columns=REQUIRED_COLS),
+            "spc_data": pd.DataFrame(columns=REQUIRED_COLS),
+            "total": 0,
+            "msa_count": 0,
+            "spc_count": 0,
+            "mean_val": 0.0,
+            "std_val": 0.0,
+            "usl": 0.0,
+            "lsl": 0.0,
+            "cp": 0.0,
+            "cpk": 0.0,
+        }
+
+    msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
+    spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", case=False, na=False)].copy()
+
+    if spc_data.empty:
+        spc_data = df.copy()
 
     mean_val = float(df["Measurement"].mean())
     std_val = safe_std(df["Measurement"])
@@ -259,7 +281,10 @@ def save_to_google_sheet(row: dict) -> None:
 
     if std_val > 0:
         cp = (usl - lsl) / (6 * std_val)
-        cpk = min((usl - mean_val) / (3 * std_val), (mean_val - lsl) / (3 * std_val))
+        cpk = min(
+            (usl - mean_val) / (3 * std_val),
+            (mean_val - lsl) / (3 * std_val)
+        )
     else:
         cp = 0.0
         cpk = 0.0
