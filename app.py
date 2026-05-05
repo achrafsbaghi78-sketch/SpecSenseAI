@@ -235,19 +235,22 @@ def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
 def save_to_google_sheet(row: dict) -> None:
     try:
-        requests.post(
+        response = requests.post(
             G_SCRIPT_URL,
             json=row,
-            timeout=5
+            timeout=10
         )
-    except Exception:
-        pass
-def prepare_data(df: pd.DataFrame) -> dict:
-    msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
-    spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", case=False, na=False)].copy()
 
-    if spc_data.empty:
-        spc_data = df.copy()
+        if response.status_code == 200:
+            st.success("✅ Sauvegardé dans Google Sheet")
+        else:
+            st.error(f"❌ Erreur Google Sheet: {response.text}")
+
+    except Exception as e:
+        st.error(f"❌ Erreur sauvegarde Google Sheet: {e}")
+
+    except Exception as e:
+        st.error(f"❌ Erreur sauvegarde Google Sheet: {e}")
 
     mean_val = float(df["Measurement"].mean())
     std_val = safe_std(df["Measurement"])
