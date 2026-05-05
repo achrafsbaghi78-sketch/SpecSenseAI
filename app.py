@@ -418,7 +418,6 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
             mesure_3 = st.number_input("Mesure 3", format="%.4f")
 
         submitted = st.form_submit_button("Enregistrer")
-
     if submitted:
         part_id_final = f"{data_type}_{part_id}"
 
@@ -466,20 +465,21 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
                 "Detection": 1,
             },
         ])
-for _, row in new_rows.iterrows():
-    save_to_google_sheet(row.to_dict())
 
-st.session_state["manual_data"] = pd.concat(
-    [st.session_state.get("manual_data", pd.DataFrame()), new_rows],
-    ignore_index=True,
-)
+        for _, row in new_rows.iterrows():
+            save_to_google_sheet(row.to_dict())
 
-st.success("✅ Mesures enregistrées")
+        st.session_state["manual_data"] = pd.concat(
+            [st.session_state.get("manual_data", pd.DataFrame()), new_rows],
+            ignore_index=True,
+        )
 
-if "manual_data" in st.session_state:
-    df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
+        st.success("✅ Mesures enregistrées")
 
-return df
+    if "manual_data" in st.session_state:
+        df = pd.concat([df, st.session_state["manual_data"]], ignore_index=True)
+
+    return df
 
 
 def page_dashboard(df: pd.DataFrame, metrics: dict) -> None:
