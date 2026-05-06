@@ -423,7 +423,7 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
 
         new_rows = pd.DataFrame([
             {
-                "Date_Time": datetime.now(),
+               "Date_Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "Part_ID": part_id_final,
                 "Operator": operator,
                 "Trial": 1,
