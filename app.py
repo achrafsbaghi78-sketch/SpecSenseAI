@@ -28,7 +28,7 @@ st.set_page_config(
 APP_NAME = "SpecSense AI"
 APP_VERSION = "V1.0"
 G_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90/export?format=csv&gid=0"
-G_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxchzK3FgKprug2PjVZd_LtuZeErsFdcZoQMIOZGttKOHigXoCCPtVnD_46Cm2nxeVVyA/exec"
+G_SCRIPT_URL ="https://script.google.com/macros/s/AKfycbxyUHT356TMsOr5WlARrj2ug9JdRim2Z7ujTQE7zloWQNS1PlNpclY6biVTxjszX7yYsQ/exec"
 LOGO_PATH = "logo.png"
 PDF_PATH = "rapport_qualite_specsense.pdf"
 
