@@ -234,12 +234,26 @@ def validate_and_clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+def clean_for_json(value):
+    if pd.isna(value):
+        return ""
+
+    if isinstance(value, (pd.Timestamp, datetime)):
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+
+    if hasattr(value, "item"):
+        return value.item()
+
+    return value
+
 
 def save_to_google_sheet(row: dict) -> None:
     try:
+        clean_row = {key: clean_for_json(value) for key, value in row.items()}
+
         response = requests.post(
             G_SCRIPT_URL,
-            json=row,
+            json=clean_row,
             timeout=10
         )
 
