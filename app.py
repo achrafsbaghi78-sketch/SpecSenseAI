@@ -1099,6 +1099,22 @@ def render_header() -> None:
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
+    def render_global_kpis(metrics: dict) -> None:
+    st.markdown("### 📊 KPIs Globaux")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    total_rows = metrics.get("total_rows", 0)
+    total_defects = metrics.get("total_defects", 0)
+    conformity_rate = metrics.get("conformity_rate", 0)
+    avg_value = metrics.get("avg_value", 0)
+
+    col1.metric("Mesures", total_rows)
+    col2.metric("Défauts", total_defects)
+    col3.metric("Conformité", f"{conformity_rate:.1f}%")
+    col4.metric("Moyenne", f"{avg_value:.2f}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
 # =========================
 # MAIN
 # =========================
