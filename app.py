@@ -1076,7 +1076,29 @@ def render_footer() -> None:
     st.markdown("---")
     st.caption(f"{APP_NAME} {APP_VERSION} | Qualité 4.0 | Inspiré IATF 16949")
 
+def render_header() -> None:
+    h1, h2 = st.columns([1, 5])
 
+    with h1:
+        if os.path.exists(LOGO_PATH):
+            st.image(LOGO_PATH, width=135)
+
+    with h2:
+        st.markdown(
+            f"""
+            <div style="padding:25px; border-radius:22px; background:linear-gradient(135deg,#0f172a,#1e293b); border:1px solid rgba(255,255,255,0.08);">
+                <h1 style="margin:0; font-size:44px; font-weight:900; color:white;">
+                    {APP_NAME}
+                </h1>
+                <p style="margin-top:10px; font-size:18px; color:#94a3b8;">
+                    Plateforme intelligente de qualité industrielle
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
 # =========================
 # MAIN
 # =========================
