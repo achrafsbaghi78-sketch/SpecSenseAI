@@ -64,57 +64,85 @@ NUMERIC_COLS = ["Measurement", "USL", "LSL", "Severity", "Occurrence", "Detectio
 # =========================
 # CSS
 # =========================
-def inject_css() -> None:
-    st.markdown(
-        """
-        <style>
-            .stApp {
-                background: linear-gradient(135deg, #020617 0%, #07111f 45%, #0b1220 100%);
-                color: white;
-            }
+def inject_css():
+    st.markdown("""
+    <style>
+    .stApp {
+        background: linear-gradient(135deg, #020617 0%, #07111f 45%, #0b1220 100%);
+        color: white;
+    }
 
-            .block-container {
-                padding-top: 2rem;
-                padding-left: 2rem;
-                padding-right: 2rem;
-            }
+    .block-container {
+        padding-top: 2rem;
+        padding-left: 2.5rem;
+        padding-right: 2.5rem;
+    }
 
-            section[data-testid="stSidebar"] {
-                background: linear-gradient(180deg, #020617 0%, #07111f 100%) !important;
-                border-right: 1px solid rgba(255,255,255,.08);
-            }
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #020617 0%, #07111f 100%) !important;
+        border-right: 1px solid rgba(255,255,255,0.10);
+    }
 
-            div[data-testid="stMetric"] {
-                background: radial-gradient(circle at top left, rgba(0,212,255,.18), rgba(15,23,42,.92));
-                border: 1px solid rgba(0,212,255,.45);
-                border-radius: 22px;
-                padding: 20px;
-                box-shadow: 0 18px 40px rgba(0,0,0,.25);
-            }
+    div[data-testid="stMetric"] {
+        background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.85));
+        border: 1px solid rgba(56,189,248,0.35);
+        border-radius: 24px;
+        padding: 22px;
+        box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+    }
 
-            div[data-testid="stMetricValue"] {
-                color: white !important;
-                font-size: 34px !important;
-                font-weight: 900 !important;
-            }
+    div[data-testid="stMetricLabel"] p {
+        color: #cbd5e1 !important;
+        font-weight: 800 !important;
+        font-size: 15px !important;
+    }
 
-            div[role="radiogroup"] label {
-                background: rgba(15,23,42,.65);
-                border: 1px solid rgba(148,163,184,.14);
-                border-radius: 14px;
-                padding: 10px 12px;
-                margin-bottom: 8px;
-            }
+    div[data-testid="stMetricValue"] {
+        color: #ffffff !important;
+        font-size: 34px !important;
+        font-weight: 900 !important;
+    }
 
-            @media (max-width: 768px) {
-                .block-container {
-                    padding: 1rem !important;
-                }
-            }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    div[role="radiogroup"] label {
+        background: rgba(15,23,42,0.75);
+        border: 1px solid rgba(148,163,184,0.18);
+        border-radius: 16px;
+        padding: 12px 14px;
+        margin-bottom: 8px;
+        transition: all 0.25s ease;
+    }
+
+    div[role="radiogroup"] label:hover {
+        background: rgba(14,165,233,0.18);
+        border-color: rgba(56,189,248,0.55);
+        transform: translateX(4px);
+    }
+
+    .pro-card {
+        background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(30,41,59,0.82));
+        border: 1px solid rgba(56,189,248,0.28);
+        border-radius: 26px;
+        padding: 24px;
+        box-shadow: 0 20px 45px rgba(0,0,0,0.30);
+        margin-bottom: 18px;
+    }
+
+    .status-ok {
+        color: #22c55e;
+        font-weight: 900;
+    }
+
+    .status-warning {
+        color: #f59e0b;
+        font-weight: 900;
+    }
+
+    .status-bad {
+        color: #ef4444;
+        font-weight: 900;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 
 # =========================
@@ -385,16 +413,68 @@ def render_header() -> None:
 
     with h2:
         st.markdown(
-            """
-            <h1 style="margin:0; font-size:44px; font-weight:900;">SpecSense AI</h1>
-            <p style="margin:6px 0 0 0; color:#94a3b8; font-size:18px;">
-                Plateforme intelligente de qualité industrielle
-            </p>
+            f"""
+            <div class="pro-card">
+                <h1 style="margin:0; font-size:44px; font-weight:900;">
+                    {APP_NAME}
+                </h1>
+
+                <p style="
+                    margin:8px 0 0 0;
+                    color:#94a3b8;
+                    font-size:18px;
+                    font-weight:500;
+                ">
+                    Plateforme intelligente de qualité industrielle
+                </p>
+
+                <div style="
+                    margin-top:18px;
+                    display:flex;
+                    gap:12px;
+                    flex-wrap:wrap;
+                ">
+
+                    <div style="
+                        background:rgba(34,197,94,0.15);
+                        color:#22c55e;
+                        padding:8px 16px;
+                        border-radius:999px;
+                        font-weight:700;
+                        border:1px solid rgba(34,197,94,0.35);
+                    ">
+                        ✅ IA Active
+                    </div>
+
+                    <div style="
+                        background:rgba(56,189,248,0.15);
+                        color:#38bdf8;
+                        padding:8px 16px;
+                        border-radius:999px;
+                        font-weight:700;
+                        border:1px solid rgba(56,189,248,0.35);
+                    ">
+                        📊 SPC + MSA
+                    </div>
+
+                    <div style="
+                        background:rgba(168,85,247,0.15);
+                        color:#c084fc;
+                        padding:8px 16px;
+                        border-radius:999px;
+                        font-weight:700;
+                        border:1px solid rgba(168,85,247,0.35);
+                    ">
+                        🚀 Version PRO
+                    </div>
+
+                </div>
+            </div>
             """,
             unsafe_allow_html=True,
         )
 
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
 
 
 def render_global_kpis(metrics: dict) -> None:
