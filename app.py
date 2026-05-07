@@ -412,69 +412,73 @@ def render_header() -> None:
             st.image(LOGO_PATH, width=135)
 
     with h2:
-        st.markdown(
-            f"""
-            <div class="pro-card">
-                <h1 style="margin:0; font-size:44px; font-weight:900;">
-                    {APP_NAME}
-                </h1>
+    st.markdown(
+        f"""
+        <div class="pro-card">
 
-                <p style="
-                    margin:8px 0 0 0;
-                    color:#94a3b8;
-                    font-size:18px;
-                    font-weight:500;
-                ">
-                    Plateforme intelligente de qualité industrielle
-                </p>
+            <h1 style="
+                margin:0;
+                font-size:44px;
+                font-weight:900;
+            ">
+                {APP_NAME}
+            </h1>
+
+            <p style="
+                margin:8px 0 0 0;
+                color:#94a3b8;
+                font-size:18px;
+                font-weight:500;
+            ">
+                Plateforme intelligente de qualité industrielle
+            </p>
+
+            <div style="
+                margin-top:18px;
+                display:flex;
+                gap:12px;
+                flex-wrap:wrap;
+            ">
 
                 <div style="
-                    margin-top:18px;
-                    display:flex;
-                    gap:12px;
-                    flex-wrap:wrap;
+                    background:rgba(34,197,94,0.15);
+                    color:#22c55e;
+                    padding:8px 16px;
+                    border-radius:999px;
+                    font-weight:700;
+                    border:1px solid rgba(34,197,94,0.35);
                 ">
-
-                    <div style="
-                        background:rgba(34,197,94,0.15);
-                        color:#22c55e;
-                        padding:8px 16px;
-                        border-radius:999px;
-                        font-weight:700;
-                        border:1px solid rgba(34,197,94,0.35);
-                    ">
-                        ✅ IA Active
-                    </div>
-
-                    <div style="
-                        background:rgba(56,189,248,0.15);
-                        color:#38bdf8;
-                        padding:8px 16px;
-                        border-radius:999px;
-                        font-weight:700;
-                        border:1px solid rgba(56,189,248,0.35);
-                    ">
-                        📊 SPC + MSA
-                    </div>
-
-                    <div style="
-                        background:rgba(168,85,247,0.15);
-                        color:#c084fc;
-                        padding:8px 16px;
-                        border-radius:999px;
-                        font-weight:700;
-                        border:1px solid rgba(168,85,247,0.35);
-                    ">
-                        🚀 Version PRO
-                    </div>
-
+                    ✅ IA Active
                 </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
-    st.markdown("<br>", unsafe_allow_html=True)
+                <div style="
+                    background:rgba(56,189,248,0.15);
+                    color:#38bdf8;
+                    padding:8px 16px;
+                    border-radius:999px;
+                    font-weight:700;
+                    border:1px solid rgba(56,189,248,0.35);
+                ">
+                    📊 SPC + MSA
+                </div>
+
+                <div style="
+                    background:rgba(168,85,247,0.15);
+                    color:#c084fc;
+                    padding:8px 16px;
+                    border-radius:999px;
+                    font-weight:700;
+                    border:1px solid rgba(168,85,247,0.35);
+                ">
+                    🚀 Version PRO
+                </div>
+
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 def render_global_kpis(metrics: dict) -> None:
