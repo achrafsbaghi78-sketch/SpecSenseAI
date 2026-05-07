@@ -404,8 +404,6 @@ def render_sidebar(metrics: dict) -> str:
     return clean_page_name(page)
 
 
-def render_header()
-
 # =========================
 # PAGES
 # =========================
