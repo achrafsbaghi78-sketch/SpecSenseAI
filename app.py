@@ -1099,7 +1099,7 @@ def render_header() -> None:
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
-   def render_global_kpis(metrics: dict) -> None:
+def render_global_kpis(metrics: dict) -> None:
     st.markdown("### 📊 KPIs Globaux")
 
     col1, col2, col3, col4 = st.columns(4)
