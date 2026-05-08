@@ -413,7 +413,7 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
     with st.form("form_mesures"):
         col1, col2, col3 = st.columns(3)
 
-        with col1:
+        with coli:
             data_type = st.selectbox("Type de données", ["SPC", "MSA"])
             part_id = st.text_input("Référence / Part ID")
             operator = st.text_input("Opérateur")
