@@ -1101,10 +1101,77 @@ def render_global_kpis(metrics: dict) -> None:
     spc_count = metrics.get("spc_count", 0)
     avg_value = metrics.get("mean_val", 0)
 
-    col1.metric("Mesures", total_rows)
-    col2.metric("MSA", msa_count)
-    col3.metric("SPC", spc_count)
-    col4.metric("Moyenne", f"{avg_value:.2f}")
+   with col1:
+    st.markdown(
+        f"""
+        <div style="
+            padding:22px;
+            border-radius:20px;
+            background:linear-gradient(135deg,#0f172a,#1e293b);
+            border:1px solid rgba(0,191,255,0.35);
+        ">
+            <div style="color:#94a3b8;font-size:14px;">Mesures</div>
+            <div style="font-size:34px;font-weight:800;color:white;">
+                {total_rows}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with col2:
+    st.markdown(
+        f"""
+        <div style="
+            padding:22px;
+            border-radius:20px;
+            background:linear-gradient(135deg,#0f172a,#1e293b);
+            border:1px solid rgba(0,191,255,0.35);
+        ">
+            <div style="color:#94a3b8;font-size:14px;">MSA</div>
+            <div style="font-size:34px;font-weight:800;color:white;">
+                {msa_count}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with col3:
+    st.markdown(
+        f"""
+        <div style="
+            padding:22px;
+            border-radius:20px;
+            background:linear-gradient(135deg,#0f172a,#1e293b);
+            border:1px solid rgba(0,191,255,0.35);
+        ">
+            <div style="color:#94a3b8;font-size:14px;">SPC</div>
+            <div style="font-size:34px;font-weight:800;color:white;">
+                {spc_count}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with col4:
+    st.markdown(
+        f"""
+        <div style="
+            padding:22px;
+            border-radius:20px;
+            background:linear-gradient(135deg,#0f172a,#1e293b);
+            border:1px solid rgba(0,191,255,0.35);
+        ">
+            <div style="color:#94a3b8;font-size:14px;">Moyenne</div>
+            <div style="font-size:34px;font-weight:800;color:white;">
+                {avg_value:.2f}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.markdown("<br>", unsafe_allow_html=True)
 # =========================
 # MAIN
