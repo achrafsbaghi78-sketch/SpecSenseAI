@@ -418,12 +418,12 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
             part_id = st.text_input("Référence / Part ID")
             operator = st.text_input("Opérateur")
 
-        with col2:
+        with coli:
             machine = st.text_input("Machine", value="M1")
             usl = st.number_input("USL", value=12.1000, format="%.4f")
             lsl = st.number_input("LSL", value=11.9000, format="%.4f")
 
-        with col3:
+        with coli:
             mesure_1 = st.number_input("Mesure 1", format="%.4f")
             mesure_2 = st.number_input("Mesure 2", format="%.4f")
             mesure_3 = st.number_input("Mesure 3", format="%.4f")
