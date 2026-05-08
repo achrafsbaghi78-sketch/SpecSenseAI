@@ -827,14 +827,6 @@ def page_spc(metrics: dict) -> None:
         fig.add_vline(x=lsl, line_dash="dash", annotation_text="LSL")
         plot_chart(fig, "spc_distribution_hist")
 
-    with tab_capability:
-        st.markdown("### 🎯 Capabilité SPC")
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("USL", f"{usl:.4f}")
-        c2.metric("LSL", f"{lsl:.4f}")
-        c3.metric("Cp", f"{metrics['cp']:.2f}")
-        c4.metric("Cpk", f"{metrics['cpk']:.2f}")
-        process_status(metrics["cpk"])
 
     with tab_machine:
         st.markdown("### 🏭 Machine / Opérateur")
