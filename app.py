@@ -1101,7 +1101,7 @@ def render_global_kpis(metrics: dict) -> None:
     spc_count = metrics.get("spc_count", 0)
     avg_value = metrics.get("mean_val", 0)
 
-   with col1:
+with col1:
     st.markdown(
         f"""
         <div style="
