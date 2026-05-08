@@ -1047,28 +1047,29 @@ Donne :
             answer = ask_hf_ai(prompt)
         st.markdown("### 🧠 Réponse IA")
             st.success(answer)
-    def render_pdf_section(metrics: dict) -> None:
-        st.markdown("---")
-        st.subheader("📄 Rapport Qualité")
-    
-        if st.button("Générer le rapport PDF", key="generate_pdf_button"):
-            pdf_path = generate_pdf_report(metrics)
-    
-            with open(pdf_path, "rb") as file:
-                st.download_button(
-                    label="📥 Télécharger le rapport PDF",
-                    data=file,
-                    file_name="rapport_qualite_specsense.pdf",
-                    mime="application/pdf",
-                    key="download_pdf_button",
-                )
-    
-    
-    def render_footer() -> None:
-        st.markdown("---")
-        st.caption(
-            f"{APP_NAME} {APP_VERSION} | Qualité 4.0 | Inspiré IATF 16949"
-        )
+        
+  def render_pdf_section(metrics: dict) -> None:
+    st.markdown("---")
+    st.subheader("📄 Rapport Qualité")
+
+    if st.button("Générer le rapport PDF", key="generate_pdf_button"):
+        pdf_path = generate_pdf_report(metrics)
+
+        with open(pdf_path, "rb") as file:
+            st.download_button(
+                label="📥 Télécharger le rapport PDF",
+                data=file,
+                file_name="rapport_qualite_specsense.pdf",
+                mime="application/pdf",
+                key="download_pdf_button",
+            )
+
+
+def render_footer() -> None:
+    st.markdown("---")
+    st.caption(
+        f"{APP_NAME} {APP_VERSION} | Qualité 4.0 | Inspiré IATF 16949"
+    )
 # =========================
 # MAIN
 # =========================
