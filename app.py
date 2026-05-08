@@ -757,9 +757,9 @@ def page_spc(metrics: dict) -> None:
     spc_work["Point"] = range(1, len(spc_work) + 1)
     spc_work["Hors_Controle"] = (spc_work["Measurement"] > ucl) | (spc_work["Measurement"] < lcl)
 
-    tab_control, tab_rules, tab_distribution, tab_capability, tab_machine, tab_ai = st.tabs(
-        ["Carte de contrôle", "Règles SPC", "Distribution", "Capabilité", "Machine / Opérateur", "Interprétation IA"]
-    )
+   tab_control, tab_rules, tab_distribution, tab_machine, tab_ai = st.tabs(
+    ["Carte de contrôle", "Règles SPC", "Distribution", "Machine / Opérateur", "Interprétation IA"]
+)
 
     with tab_control:
         st.markdown("### 📈 Carte de contrôle")
