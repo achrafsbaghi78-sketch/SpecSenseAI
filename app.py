@@ -1090,89 +1090,89 @@ def render_header() -> None:
             unsafe_allow_html=True
         )
 
-    st.markdown("<br>", unsafe_allow_html=True)
-def render_global_kpis(metrics: dict) -> None:
-    st.markdown("### 📊 KPIs Globaux")
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    total_rows = metrics.get("total", 0)
-    msa_count = metrics.get("msa_count", 0)
-    spc_count = metrics.get("spc_count", 0)
-    avg_value = metrics.get("mean_val", 0)
-
-with col1:
-    st.markdown(
-        f"""
-        <div style="
-            padding:22px;
-            border-radius:20px;
-            background:linear-gradient(135deg,#0f172a,#1e293b);
-            border:1px solid rgba(0,191,255,0.35);
-        ">
-            <div style="color:#94a3b8;font-size:14px;">Mesures</div>
-            <div style="font-size:34px;font-weight:800;color:white;">
-                {total_rows}
+        st.markdown("<br>", unsafe_allow_html=True)
+    def render_global_kpis(metrics: dict) -> None:
+        st.markdown("### 📊 KPIs Globaux")
+    
+        col1, col2, col3, col4 = st.columns(4)
+    
+        total_rows = metrics.get("total", 0)
+        msa_count = metrics.get("msa_count", 0)
+        spc_count = metrics.get("spc_count", 0)
+        avg_value = metrics.get("mean_val", 0)
+    
+    with col1:
+        st.markdown(
+            f"""
+            <div style="
+                padding:22px;
+                border-radius:20px;
+                background:linear-gradient(135deg,#0f172a,#1e293b);
+                border:1px solid rgba(0,191,255,0.35);
+            ">
+                <div style="color:#94a3b8;font-size:14px;">Mesures</div>
+                <div style="font-size:34px;font-weight:800;color:white;">
+                    {total_rows}
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with col2:
-    st.markdown(
-        f"""
-        <div style="
-            padding:22px;
-            border-radius:20px;
-            background:linear-gradient(135deg,#0f172a,#1e293b);
-            border:1px solid rgba(0,191,255,0.35);
-        ">
-            <div style="color:#94a3b8;font-size:14px;">MSA</div>
-            <div style="font-size:34px;font-weight:800;color:white;">
-                {msa_count}
+            """,
+            unsafe_allow_html=True,
+        )
+    
+    with col2:
+        st.markdown(
+            f"""
+            <div style="
+                padding:22px;
+                border-radius:20px;
+                background:linear-gradient(135deg,#0f172a,#1e293b);
+                border:1px solid rgba(0,191,255,0.35);
+            ">
+                <div style="color:#94a3b8;font-size:14px;">MSA</div>
+                <div style="font-size:34px;font-weight:800;color:white;">
+                    {msa_count}
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with col3:
-    st.markdown(
-        f"""
-        <div style="
-            padding:22px;
-            border-radius:20px;
-            background:linear-gradient(135deg,#0f172a,#1e293b);
-            border:1px solid rgba(0,191,255,0.35);
-        ">
-            <div style="color:#94a3b8;font-size:14px;">SPC</div>
-            <div style="font-size:34px;font-weight:800;color:white;">
-                {spc_count}
+            """,
+            unsafe_allow_html=True,
+        )
+    
+    with col3:
+        st.markdown(
+            f"""
+            <div style="
+                padding:22px;
+                border-radius:20px;
+                background:linear-gradient(135deg,#0f172a,#1e293b);
+                border:1px solid rgba(0,191,255,0.35);
+            ">
+                <div style="color:#94a3b8;font-size:14px;">SPC</div>
+                <div style="font-size:34px;font-weight:800;color:white;">
+                    {spc_count}
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with col4:
-    st.markdown(
-        f"""
-        <div style="
-            padding:22px;
-            border-radius:20px;
-            background:linear-gradient(135deg,#0f172a,#1e293b);
-            border:1px solid rgba(0,191,255,0.35);
-        ">
-            <div style="color:#94a3b8;font-size:14px;">Moyenne</div>
-            <div style="font-size:34px;font-weight:800;color:white;">
-                {avg_value:.2f}
+            """,
+            unsafe_allow_html=True,
+        )
+    
+    with col4:
+        st.markdown(
+            f"""
+            <div style="
+                padding:22px;
+                border-radius:20px;
+                background:linear-gradient(135deg,#0f172a,#1e293b);
+                border:1px solid rgba(0,191,255,0.35);
+            ">
+                <div style="color:#94a3b8;font-size:14px;">Moyenne</div>
+                <div style="font-size:34px;font-weight:800;color:white;">
+                    {avg_value:.2f}
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown("<br>", unsafe_allow_html=True)
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown("<br>", unsafe_allow_html=True)
 # =========================
 # MAIN
 # =========================
