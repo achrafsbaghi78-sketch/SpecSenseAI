@@ -1022,7 +1022,7 @@ def page_ai(metrics: dict) -> None:
             st.warning("Écris une question")
             return
 
-           prompt = f"""
+    prompt = f"""
 Tu es un expert qualité automobile.
 
 Données actuelles :
