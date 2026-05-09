@@ -1046,7 +1046,7 @@ Donne :
         with st.spinner("🤖 Analyse en cours..."):
             answer = ask_hf_ai(prompt)
         st.markdown("### 🧠 Réponse IA")
-            st.success(answer)
+          st.success(answer)
         
   def render_pdf_section(metrics: dict) -> None:
     st.markdown("---")
