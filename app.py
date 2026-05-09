@@ -1050,7 +1050,6 @@ Donne :
     st.markdown("### 🧠 Réponse IA")
     st.success(answer)
 
-
 def render_pdf_section(metrics: dict) -> None:
     st.markdown("---")
     st.subheader("📄 Rapport Qualité")
@@ -1067,7 +1066,7 @@ def render_pdf_section(metrics: dict) -> None:
                 key="download_pdf_button",
             )
      def render_footer() -> None:
-    st.markdown("---")
+       st.markdown("---")
     st.caption(
         f"{APP_NAME} {APP_VERSION} | Qualité 4.0 | Inspiré IATF 16949"
     )
