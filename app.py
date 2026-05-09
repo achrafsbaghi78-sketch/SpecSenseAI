@@ -1037,17 +1037,11 @@ Données actuelles :
 Question :
 {question}
 
-Donne :
-1. Interprétation
-2. Causes possibles
-3. Actions immédiates
-4. Actions correctives
-"""
-        with st.spinner("🤖 Analyse en cours..."):
-            answer = ask_hf_ai(prompt)
-        st.markdown("### 🧠 Réponse IA")
-          st.success(answer)
-        
+with st.spinner("🤖 Analyse en cours..."):
+    answer = ask_hf_ai(prompt)
+
+st.markdown("### 🧠 Réponse IA")
+st.success(answer)
   def render_pdf_section(metrics: dict) -> None:
     st.markdown("---")
     st.subheader("📄 Rapport Qualité")
