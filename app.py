@@ -1066,8 +1066,8 @@ def render_pdf_section(metrics: dict) -> None:
                 key="download_pdf_button",
             )
 def render_footer() -> None:
-       st.markdown("---")
-       st.caption(
+    st.markdown("---")
+    st.caption(
         f"{APP_NAME} {APP_VERSION} | Qualité 4.0 | Inspiré IATF 16949"
     )
 
@@ -1100,7 +1100,9 @@ def render_header() -> None:
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
-    def render_global_kpis(metrics: dict) -> None:
+
+
+def render_global_kpis(metrics: dict) -> None:
     st.markdown("### 📊 KPIs Globaux")
 
     col1, col2, col3, col4 = st.columns(4)
