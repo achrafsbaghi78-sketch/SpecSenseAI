@@ -413,17 +413,17 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
     with st.form("form_mesures"):
         col1, col2, col3 = st.columns(3)
 
-        with coli:
+        with col1:
             data_type = st.selectbox("Type de données", ["SPC", "MSA"])
             part_id = st.text_input("Référence / Part ID")
             operator = st.text_input("Opérateur")
 
-        with coli:
+        with col1:
             machine = st.text_input("Machine", value="M1")
             usl = st.number_input("USL", value=12.1000, format="%.4f")
             lsl = st.number_input("LSL", value=11.9000, format="%.4f")
 
-        with coli:
+        with col1:
             mesure_1 = st.number_input("Mesure 1", format="%.4f")
             mesure_2 = st.number_input("Mesure 2", format="%.4f")
             mesure_3 = st.number_input("Mesure 3", format="%.4f")
