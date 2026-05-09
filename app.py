@@ -1065,7 +1065,7 @@ def render_pdf_section(metrics: dict) -> None:
                 mime="application/pdf",
                 key="download_pdf_button",
             )
-     def render_footer() -> None:
+def render_footer() -> None:
        st.markdown("---")
     st.caption(
         f"{APP_NAME} {APP_VERSION} | Qualité 4.0 | Inspiré IATF 16949"
