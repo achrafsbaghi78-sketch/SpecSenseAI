@@ -1022,7 +1022,7 @@ def page_ai(metrics: dict) -> None:
             st.warning("Écris une question")
             return
 
-        prompt = f"""
+           prompt = f"""
 Tu es un expert qualité automobile.
 
 Données actuelles :
@@ -1037,12 +1037,21 @@ Données actuelles :
 Question :
 {question}
 
-with st.spinner("🤖 Analyse en cours..."):
-    answer = ask_hf_ai(prompt)
+Donne :
+1. Interprétation
+2. Causes possibles
+3. Actions immédiates
+4. Actions correctives
+"""
 
-st.markdown("### 🧠 Réponse IA")
-st.success(answer)
-  def render_pdf_section(metrics: dict) -> None:
+    with st.spinner("🤖 Analyse en cours..."):
+        answer = ask_hf_ai(prompt)
+
+    st.markdown("### 🧠 Réponse IA")
+    st.success(answer)
+
+
+def render_pdf_section(metrics: dict) -> None:
     st.markdown("---")
     st.subheader("📄 Rapport Qualité")
 
@@ -1057,13 +1066,6 @@ st.success(answer)
                 mime="application/pdf",
                 key="download_pdf_button",
             )
-
-
-def render_footer() -> None:
-    st.markdown("---")
-    st.caption(
-        f"{APP_NAME} {APP_VERSION} | Qualité 4.0 | Inspiré IATF 16949"
-    )
 # =========================
 # MAIN
 # =========================
