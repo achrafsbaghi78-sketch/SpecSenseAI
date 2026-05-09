@@ -1067,7 +1067,7 @@ def render_pdf_section(metrics: dict) -> None:
             )
 def render_footer() -> None:
        st.markdown("---")
-    st.caption(
+       st.caption(
         f"{APP_NAME} {APP_VERSION} | Qualité 4.0 | Inspiré IATF 16949"
     )
 
