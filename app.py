@@ -1,16 +1,15 @@
 """
-SpecSense AI - Plateforme Intelligente de Gestion de la Qualité
-Version Française - Production Ready
+SpecSense AI - Plateforme Premium de Gestion de la Qualité
+Design Luxe Professionnel - Production Ready
 """
 import os
-import sys
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import sqlite3
 from datetime import datetime
-from pathlib import Path
+import numpy as np
 
 # ========================
 # CONFIGURATION PAGE
@@ -20,146 +19,394 @@ st.set_page_config(
     page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded",
-    menu_items={
-        'About': "SpecSense AI v2.0 - Plateforme de Gestion de la Qualité Industrielle"
-    }
 )
 
 # ========================
-# CSS PROFESSIONNEL
+# CSS LUXE PREMIUM - SANS EMOJI
 # ========================
-def inject_css():
+def inject_css_premium():
     st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
     }
     
+    html, body, .stApp {
+        font-family: 'Poppins', 'Inter', sans-serif;
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1229 100%) !important;
+        color: #e2e8f0;
+        overflow-x: hidden;
+    }
+    
     .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-        color: #f1f5f9;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-attachment: fixed;
     }
     
-    .block-container {
-        padding-top: 2rem;
-        padding-left: 3rem;
-        padding-right: 3rem;
+    /* ========================
+       HEADER PREMIUM
+       ======================== */
+    .header-premium {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1a1f3a 100%);
+        padding: 50px 40px;
+        border-radius: 24px;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        margin-bottom: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
     }
     
+    .header-premium h1 {
+        background: linear-gradient(135deg, #38bdf8 0%, #06b6d4 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 52px;
+        font-weight: 900;
+        margin: 0;
+        letter-spacing: -2px;
+    }
+    
+    .header-premium p {
+        color: #94a3b8;
+        font-size: 18px;
+        margin: 15px 0 0 0;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+    
+    /* ========================
+       SIDEBAR PREMIUM
+       ======================== */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
-        border-right: 2px solid #3b82f6;
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+        background: linear-gradient(180deg, #0f1729 0%, #1a1f3a 100%) !important;
+        border-right: 1px solid rgba(56, 189, 248, 0.1);
+        box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
     }
     
-    .sidebar-header {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    .sidebar-title {
+        background: linear-gradient(135deg, #38bdf8 0%, #06b6d4 100%);
+        padding: 24px;
+        border-radius: 16px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        box-shadow: 0 8px 32px rgba(56, 189, 248, 0.15);
     }
     
-    .sidebar-header h2 {
+    .sidebar-title h2 {
         color: white;
         font-size: 24px;
         font-weight: 900;
         margin: 0;
+        letter-spacing: -0.5px;
     }
     
+    /* ========================
+       METRICS PREMIUM
+       ======================== */
     div[data-testid="stMetric"] {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
-        border: 1px solid rgba(59, 130, 246, 0.4);
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
+        border: 1px solid rgba(59, 130, 246, 0.15);
         border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 8px 32px rgba(59, 130, 246, 0.1);
-        transition: all 0.3s ease;
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(56, 189, 248, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     div[data-testid="stMetric"]:hover {
-        border-color: rgba(59, 130, 246, 0.8);
-        box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
-        transform: translateY(-2px);
+        border-color: rgba(56, 189, 248, 0.4);
+        box-shadow: 0 16px 48px rgba(56, 189, 248, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transform: translateY(-6px);
     }
     
     div[data-testid="stMetricLabel"] p {
-        color: #cbd5e1 !important;
-        font-weight: 700 !important;
-        font-size: 13px !important;
+        color: #94a3b8 !important;
+        font-weight: 600 !important;
+        font-size: 12px !important;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 1.2px;
+        margin: 0 !important;
     }
     
     div[data-testid="stMetricValue"] {
-        color: #3b82f6 !important;
-        font-size: 32px !important;
+        color: #38bdf8 !important;
+        font-size: 36px !important;
         font-weight: 900 !important;
-        margin-top: 8px !important;
+        margin-top: 12px !important;
+        text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
     }
     
-    .pro-card {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
-        border: 1px solid rgba(59, 130, 246, 0.3);
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        margin: 15px 0;
+    /* ========================
+       BUTTONS PREMIUM
+       ======================== */
+    .stButton > button {
+        background: linear-gradient(135deg, #38bdf8 0%, #06b6d4 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 14px 40px !important;
+        font-weight: 700 !important;
+        font-size: 15px !important;
+        letter-spacing: 0.7px !important;
+        box-shadow: 0 10px 30px rgba(56, 189, 248, 0.3) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        text-transform: uppercase;
+        cursor: pointer !important;
     }
     
-    .status-excellent {
-        color: #22c55e;
-        font-weight: 900;
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #06b6d4 0%, #38bdf8 100%) !important;
+        box-shadow: 0 15px 40px rgba(56, 189, 248, 0.5) !important;
+        transform: translateY(-3px) !important;
     }
     
-    .status-warning {
-        color: #f59e0b;
-        font-weight: 900;
+    .stButton > button:active {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 8px 25px rgba(56, 189, 248, 0.4) !important;
     }
     
-    .status-critical {
-        color: #ef4444;
-        font-weight: 900;
+    /* BUTTON SECONDARY */
+    .button-secondary {
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(6, 182, 212, 0.15)) !important;
+        border: 1px solid rgba(56, 189, 248, 0.4) !important;
+        color: #38bdf8 !important;
     }
     
-    .header-title {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-size: 42px;
-        font-weight: 900;
-        margin-bottom: 10px;
+    .button-secondary:hover {
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(6, 182, 212, 0.25)) !important;
     }
     
-    .header-subtitle {
-        color: #94a3b8;
-        font-size: 16px;
-        font-weight: 500;
-    }
-    
+    /* ========================
+       TABS PREMIUM
+       ======================== */
     div[role="tablist"] {
-        background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), transparent);
-        padding: 10px;
-        border-radius: 10px;
-        border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+        background: linear-gradient(90deg, rgba(56, 189, 248, 0.05), transparent);
+        padding: 16px;
+        border-radius: 14px;
+        border-bottom: 2px solid rgba(56, 189, 248, 0.2);
+        gap: 10px;
     }
     
     button[role="tab"] {
-        background: rgba(59, 130, 246, 0.2) !important;
-        border-radius: 8px !important;
+        background: rgba(56, 189, 248, 0.08) !important;
+        border-radius: 10px !important;
         color: #cbd5e1 !important;
         font-weight: 600 !important;
-        padding: 12px 20px !important;
-        margin: 0 5px !important;
+        padding: 12px 28px !important;
+        margin: 0 6px !important;
+        border: 1px solid rgba(56, 189, 248, 0.15) !important;
+        transition: all 0.3s ease !important;
+        font-size: 14px !important;
+    }
+    
+    button[role="tab"]:hover {
+        background: rgba(56, 189, 248, 0.2) !important;
+        border-color: rgba(56, 189, 248, 0.4) !important;
+        transform: translateY(-2px) !important;
     }
     
     button[aria-selected="true"] {
-        background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+        background: linear-gradient(135deg, #38bdf8, #06b6d4) !important;
         color: white !important;
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important;
+        box-shadow: 0 8px 24px rgba(56, 189, 248, 0.3) !important;
+        border-color: rgba(56, 189, 248, 0.6) !important;
+    }
+    
+    /* ========================
+       CARDS PREMIUM
+       ======================== */
+    .card-premium {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
+        border: 1px solid rgba(56, 189, 248, 0.15);
+        border-radius: 16px;
+        padding: 28px;
+        margin: 20px 0;
+        box-shadow: 0 8px 32px rgba(56, 189, 248, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+    }
+    
+    /* ========================
+       INPUTS PREMIUM
+       ======================== */
+    .stTextInput > div > div > input,
+    .stNumberInput > div > div > input,
+    .stSelectbox > div > div > select {
+        background: rgba(15, 23, 42, 0.8) !important;
+        border: 1px solid rgba(56, 189, 248, 0.2) !important;
+        border-radius: 10px !important;
+        color: #e2e8f0 !important;
+        padding: 12px 16px !important;
+        font-family: 'Poppins', sans-serif !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stTextInput > div > div > input:focus,
+    .stNumberInput > div > div > input:focus,
+    .stSelectbox > div > div > select:focus {
+        border-color: rgba(56, 189, 248, 0.6) !important;
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.25) !important;
+        background: rgba(15, 23, 42, 0.95) !important;
+    }
+    
+    /* ========================
+       ALERT BOXES PREMIUM
+       ======================== */
+    .stAlert {
+        border-radius: 12px !important;
+        padding: 18px !important;
+        border-left: 4px solid !important;
+        backdrop-filter: blur(10px);
+    }
+    
+    .stSuccess {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), transparent) !important;
+        border-left-color: #22c55e !important;
+    }
+    
+    .stError {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), transparent) !important;
+        border-left-color: #ef4444 !important;
+    }
+    
+    .stWarning {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), transparent) !important;
+        border-left-color: #f59e0b !important;
+    }
+    
+    .stInfo {
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), transparent) !important;
+        border-left-color: #38bdf8 !important;
+    }
+    
+    /* ========================
+       DATAFRAME PREMIUM
+       ======================== */
+    div[data-testid="stDataFrame"] {
+        background: rgba(15, 23, 42, 0.5) !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(56, 189, 248, 0.15) !important;
+        overflow: hidden !important;
+    }
+    
+    /* ========================
+       HEADINGS
+       ======================== */
+    h1 {
+        color: #e2e8f0 !important;
+        font-weight: 800 !important;
+        font-size: 40px !important;
+        letter-spacing: -1px !important;
+        margin-bottom: 20px !important;
+    }
+    
+    h2 {
+        color: #e2e8f0 !important;
+        font-weight: 700 !important;
+        font-size: 32px !important;
+        margin-top: 35px !important;
+        margin-bottom: 20px !important;
+        letter-spacing: -0.5px !important;
+    }
+    
+    h3 {
+        color: #cbd5e1 !important;
+        font-weight: 700 !important;
+        font-size: 22px !important;
+        margin-top: 25px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* ========================
+       SCROLLBAR
+       ======================== */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.5);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: rgba(56, 189, 248, 0.3);
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(56, 189, 248, 0.5);
+    }
+    
+    /* ========================
+       DIVIDER
+       ======================== */
+    hr {
+        border: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.2), transparent);
+        margin: 35px 0;
+    }
+    
+    /* ========================
+       FOOTER
+       ======================== */
+    .footer-premium {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.5), transparent);
+        border-top: 1px solid rgba(56, 189, 248, 0.1);
+        padding: 40px;
+        text-align: center;
+        color: #64748b;
+        margin-top: 60px;
+        border-radius: 16px;
+    }
+    
+    .footer-premium p {
+        margin: 8px 0;
+        font-weight: 500;
+    }
+    
+    /* ========================
+       CUSTOM BADGES
+       ======================== */
+    .badge-success {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+        color: #22c55e;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        display: inline-block;
+        font-weight: 600;
+        font-size: 13px;
+        margin: 5px 0;
+    }
+    
+    .badge-warning {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+        color: #f59e0b;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        display: inline-block;
+        font-weight: 600;
+        font-size: 13px;
+        margin: 5px 0;
+    }
+    
+    .badge-error {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+        color: #ef4444;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        display: inline-block;
+        font-weight: 600;
+        font-size: 13px;
+        margin: 5px 0;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -172,8 +419,7 @@ class DatabaseManager:
     """Gestionnaire de base de données SQLite"""
     
     def __init__(self):
-        db_path = st.secrets.get("DATABASE_PATH", "/tmp/specsense.db")
-        self.db_path = db_path
+        self.db_path = "/tmp/specsense.db"
         self.init_database()
     
     def init_database(self):
@@ -182,7 +428,6 @@ class DatabaseManager:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            # Table des mesures
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS mesures (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -203,21 +448,10 @@ class DatabaseManager:
                 )
             """)
             
-            # Table du journal d'audit
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS journal_audit (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    action TEXT NOT NULL,
-                    utilisateur TEXT,
-                    donnees TEXT,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
             conn.commit()
             conn.close()
         except Exception as e:
-            st.error(f"❌ Erreur base de données: {e}")
+            st.error(f"Erreur base de donnees: {e}")
     
     def ajouter_mesures(self, mesures: list) -> bool:
         """Ajouter des mesures"""
@@ -226,11 +460,6 @@ class DatabaseManager:
             cursor = conn.cursor()
             
             for mesure in mesures:
-                # Validation
-                if mesure['usl'] <= mesure['lsl']:
-                    st.error("❌ LSL doit être < USL")
-                    return False
-                
                 cursor.execute("""
                     INSERT INTO mesures 
                     (date_heure, reference_piece, operateur, essai, valeur, 
@@ -250,42 +479,18 @@ class DatabaseManager:
                     mesure['occurrence'],
                     mesure['detection']
                 ))
-                
-                self._ajouter_journal("AJOUT_MESURE", mesure['operateur'], str(mesure))
             
             conn.commit()
             conn.close()
             return True
-        
-        except sqlite3.IntegrityError:
-            st.error("❌ Ces données existent déjà")
-            return False
-        except Exception as e:
-            st.error(f"❌ Erreur sauvegarde: {e}")
-            return False
-    
-    def _ajouter_journal(self, action: str, utilisateur: str, donnees: str):
-        """Ajouter une entrée au journal"""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO journal_audit (action, utilisateur, donnees)
-                VALUES (?, ?, ?)
-            """, (action, utilisateur, donnees))
-            conn.commit()
-            conn.close()
         except:
-            pass
+            return False
     
     def obtenir_toutes_mesures(self) -> pd.DataFrame:
-        """Récupérer toutes les mesures"""
+        """Recuperer toutes les mesures"""
         try:
             conn = sqlite3.connect(self.db_path)
-            df = pd.read_sql_query(
-                "SELECT * FROM mesures ORDER BY date_heure DESC",
-                conn
-            )
+            df = pd.read_sql_query("SELECT * FROM mesures ORDER BY date_heure DESC", conn)
             conn.close()
             
             if not df.empty:
@@ -295,29 +500,20 @@ class DatabaseManager:
                 df['lsl'] = df['lsl'].astype(float)
             
             return df
-        except Exception as e:
-            st.error(f"❌ Erreur lecture: {e}")
+        except:
             return pd.DataFrame()
 
 
 # ========================
-# INDICATEURS QUALITÉ
+# QUALITY METRICS
 # ========================
 def calculer_metriques(df: pd.DataFrame) -> dict:
-    """Calculer tous les indicateurs de qualité"""
+    """Calculer les metriques de qualite"""
     if df.empty:
         return {
-            "total": 0,
-            "conforme": 0,
-            "non_conforme": 0,
-            "moyenne": 0.0,
-            "ecart_type": 0.0,
-            "usl": 0.0,
-            "lsl": 0.0,
-            "cp": 0.0,
-            "cpk": 0.0,
-            "taux_conformite": 0.0,
-            "ppm_defaut": 0,
+            "total": 0, "conforme": 0, "non_conforme": 0,
+            "moyenne": 0.0, "ecart_type": 0.0, "usl": 0.0, "lsl": 0.0,
+            "cp": 0.0, "cpk": 0.0, "taux_conformite": 0.0, "ppm_defaut": 0,
         }
     
     valeurs = df["valeur"].dropna()
@@ -330,14 +526,10 @@ def calculer_metriques(df: pd.DataFrame) -> dict:
     
     if ecart_type > 0:
         cp = tolerance / (6 * ecart_type)
-        cpk = min(
-            (usl - moyenne) / (3 * ecart_type),
-            (moyenne - lsl) / (3 * ecart_type)
-        )
+        cpk = min((usl - moyenne) / (3 * ecart_type), (moyenne - lsl) / (3 * ecart_type))
         cpk = max(cpk, 0.0)
     else:
-        cp = 0.0
-        cpk = 0.0
+        cp = cpk = 0.0
     
     conforme = len(df[(df['valeur'] <= usl) & (df['valeur'] >= lsl)])
     non_conforme = len(df) - conforme
@@ -345,323 +537,157 @@ def calculer_metriques(df: pd.DataFrame) -> dict:
     ppm_defaut = int((non_conforme / len(df) * 1000000)) if len(df) > 0 else 0
     
     return {
-        "total": len(df),
-        "conforme": conforme,
-        "non_conforme": non_conforme,
-        "moyenne": moyenne,
-        "ecart_type": ecart_type,
-        "usl": usl,
-        "lsl": lsl,
-        "cp": cp,
-        "cpk": cpk,
-        "taux_conformite": taux_conformite,
-        "ppm_defaut": ppm_defaut,
+        "total": len(df), "conforme": conforme, "non_conforme": non_conforme,
+        "moyenne": moyenne, "ecart_type": ecart_type, "usl": usl, "lsl": lsl,
+        "cp": cp, "cpk": cpk, "taux_conformite": taux_conformite, "ppm_defaut": ppm_defaut,
     }
 
 
 def evaluer_capabilite(cpk: float) -> tuple:
-    """Évaluer la capabilité du processus"""
+    """Evaluer la capabilite du processus"""
     if cpk >= 1.67:
-        return ("🌟 EXCELLENT", "#22c55e")
+        return ("EXCELLENT", "#22c55e")
     elif cpk >= 1.33:
-        return ("✅ CAPABLE", "#22c55e")
+        return ("CAPABLE", "#22c55e")
     elif cpk >= 1.0:
-        return ("🟡 CRITIQUE", "#f59e0b")
+        return ("CRITIQUE", "#f59e0b")
     else:
-        return ("❌ INCAPABLE", "#ef4444")
+        return ("INCAPABLE", "#ef4444")
 
 
 # ========================
-# PAGES
+# MAIN APP
 # ========================
 @st.cache_resource
-def obtenir_gestionnaire_db():
+def obtenir_db():
     return DatabaseManager()
 
 
-def render_header():
-    """Afficher l'en-tête"""
-    col1, col2 = st.columns([1, 4])
+def main():
+    inject_css_premium()
     
-    with col1:
-        st.markdown("""
-        <div style="
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-        ">
-            <span style="font-size: 40px;">🎯</span>
-        </div>
-        """, unsafe_allow_html=True)
+    db = obtenir_db()
+    df = db.obtenir_toutes_mesures()
+    metriques = calculer_metriques(df)
     
-    with col2:
-        st.markdown("""
-        <div>
-            <h1 style="
-                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                font-size: 40px;
-                font-weight: 900;
-                margin: 0;
-            ">SpecSense AI</h1>
-            <p style="
-                color: #94a3b8;
-                font-size: 16px;
-                margin: 5px 0 0 0;
-                font-weight: 500;
-            ">Plateforme Intelligente de Gestion de la Qualité Industrielle</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-
-def render_sidebar(metriques: dict) -> str:
-    """Afficher la barre latérale"""
+    # HEADER
+    st.markdown("""
+    <div class="header-premium">
+        <h1>SpecSense AI</h1>
+        <p>Plateforme Intelligente de Gestion de la Qualite Industrielle</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # SIDEBAR
     with st.sidebar:
         st.markdown("""
-        <div class="sidebar-header">
-            <h2>📋 MENU</h2>
+        <div class="sidebar-title">
+            <h2>MENU PRINCIPAL</h2>
         </div>
         """, unsafe_allow_html=True)
         
         page = st.radio(
             "Navigation",
-            [
-                "📊 Tableau de Bord",
-                "➕ Saisie de Mesures",
-                "📈 Analyses SPC",
-                "🔍 Capabilité",
-                "📉 Pareto",
-                "⚙️ MSA",
-                "⚠️ AMDEC"
-            ],
+            ["Tableau de Bord", "Saisie Mesures", "Analyses SPC", "Capabilite", "Pareto"],
             label_visibility="collapsed"
         )
         
         st.markdown("---")
-        st.markdown("### 📌 INDICATEURS CLÉS")
+        st.markdown("### INDICATEURS CLES")
         
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Total", metriques.get('total', 0), "mesures")
+            st.metric("Total Mesures", metriques['total'])
         with col2:
-            st.metric("Conforme", f"{metriques.get('taux_conformite', 0):.1f}%", "✅")
+            st.metric("Conformite", f"{metriques['taux_conformite']:.1f}%")
         
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Cpk", f"{metriques.get('cpk', 0):.2f}", "Index")
+            st.metric("Cpk", f"{metriques['cpk']:.2f}")
         with col2:
-            st.metric("PPM", f"{metriques.get('ppm_defaut', 0):,}", "Défauts")
+            st.metric("PPM Defauts", f"{metriques['ppm_defaut']:,}")
+    
+    # PAGES
+    if page == "Tableau de Bord":
+        st.markdown("## Tableau de Bord")
+        
+        col1, col2, col3, col4, col5 = st.columns(5)
+        col1.metric("Conformite", f"{metriques['taux_conformite']:.1f}%")
+        col2.metric("Conforme", metriques['conforme'])
+        col3.metric("Non-Conforme", metriques['non_conforme'])
+        col4.metric("Cpk", f"{metriques['cpk']:.2f}")
+        col5.metric("PPM", f"{metriques['ppm_defaut']:,}")
         
         st.markdown("---")
-        st.markdown("### 🔔 STATUT")
         
-        etat, couleur = evaluer_capabilite(metriques.get('cpk', 0))
-        st.markdown(f"<p style='color: {couleur}; font-weight: 900;'>{etat}</p>", 
-                   unsafe_allow_html=True)
+        etat, couleur = evaluer_capabilite(metriques['cpk'])
         
-        st.markdown("---")
-        st.caption(f"🕐 {datetime.now().strftime('%H:%M:%S')}")
-        st.caption("v2.0 - Production Ready")
-    
-    return page
-
-
-def page_tableau_bord(df: pd.DataFrame, metriques: dict):
-    """Page Tableau de Bord"""
-    st.subheader("📊 Tableau de Bord")
-    
-    # KPIs Principaux
-    st.markdown("### 📈 INDICATEURS PRINCIPAUX")
-    
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
-    with col1:
-        st.metric(
-            "Taux de Conformité",
-            f"{metriques['taux_conformite']:.1f}%",
-            f"+{metriques['conforme']}"
-        )
-    
-    with col2:
-        st.metric(
-            "Pièces Conformes",
-            metriques['conforme'],
-            "✅"
-        )
-    
-    with col3:
-        st.metric(
-            "Pièces Non-Conformes",
-            metriques['non_conforme'],
-            "❌" if metriques['non_conforme'] > 0 else "✅"
-        )
-    
-    with col4:
-        st.metric(
-            "Cpk",
-            f"{metriques['cpk']:.2f}",
-            "Indice de Capabilité"
-        )
-    
-    with col5:
-        st.metric(
-            "PPM",
-            f"{metriques['ppm_defaut']:,}",
-            "Défauts par Million"
-        )
-    
-    st.markdown("---")
-    
-    # Statut Global
-    st.markdown("### 🎯 STATUT GLOBAL DU PROCESSUS")
-    
-    etat, couleur = evaluer_capabilite(metriques['cpk'])
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
         if metriques['cpk'] >= 1.33:
-            st.success("✅ Le processus est capable et maîtrisé")
+            st.success("Processus CAPABLE et maitrise")
         elif metriques['cpk'] >= 1.0:
-            st.warning("⚠️ Le processus approche de la limite. Amélioration requise.")
+            st.warning("Processus CRITIQUE - Amelioration requise")
         else:
-            st.error("❌ Le processus n'est pas capable. Action immédiate requise!")
-    
-    with col2:
-        st.markdown(f"""
-        <div style="
-            background: linear-gradient(135deg, {couleur}40, {couleur}20);
-            border: 2px solid {couleur};
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-        ">
-            <p style="color: {couleur}; font-weight: 900; font-size: 24px; margin: 0;">
-                {etat.split()[1]}
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # Graphiques
-    st.markdown("### 📊 VISUALISATIONS")
-    
-    if not df.empty:
-        tab1, tab2, tab3 = st.tabs(["📈 Évolution", "📊 Distribution", "👥 Opérateurs"])
+            st.error("Processus INCAPABLE - Action IMMEDIATE requise")
         
-        with tab1:
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=list(range(len(df))),
-                y=df['valeur'],
-                mode='lines+markers',
-                name='Mesures',
-                line=dict(color='#3b82f6', width=2),
-                marker=dict(size=6)
-            ))
-            fig.add_hline(y=metriques['moyenne'], line_dash='dash', 
-                         annotation_text='Moyenne', line_color='#10b981')
-            fig.add_hline(y=metriques['usl'], line_dash='dot', 
-                         annotation_text='USL', line_color='#ef4444')
-            fig.add_hline(y=metriques['lsl'], line_dash='dot', 
-                         annotation_text='LSL', line_color='#ef4444')
-            fig.update_layout(
-                title='Évolution des Mesures',
-                template='plotly_dark',
-                height=450,
-                hovermode='x unified',
-                xaxis_title='Numéro de Mesure',
-                yaxis_title='Valeur'
-            )
-            st.plotly_chart(fig, use_container_width=True)
+        st.markdown("---")
         
-        with tab2:
-            fig = px.histogram(
-                df,
-                x='valeur',
-                nbins=40,
-                title='Distribution des Valeurs',
-                template='plotly_dark',
-                color_discrete_sequence=['#3b82f6']
-            )
-            fig.add_vline(x=metriques['usl'], line_dash='dash', line_color='red',
-                         annotation_text='USL')
-            fig.add_vline(x=metriques['lsl'], line_dash='dash', line_color='red',
-                         annotation_text='LSL')
-            fig.add_vline(x=metriques['moyenne'], line_dash='dot', line_color='green',
-                         annotation_text='Moyenne')
-            fig.update_layout(height=450)
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with tab3:
-            if 'operateur' in df.columns:
-                fig = px.box(
-                    df,
-                    x='operateur',
-                    y='valeur',
-                    color='operateur',
-                    title='Performance par Opérateur',
-                    template='plotly_dark'
+        if not df.empty:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("### Evolution des Mesures")
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=list(range(len(df))), y=df['valeur'],
+                    mode='lines+markers', name='Mesures',
+                    line=dict(color='#38bdf8', width=2),
+                    marker=dict(size=6)
+                ))
+                fig.add_hline(y=metriques['moyenne'], line_dash='dash', 
+                             annotation_text='Moyenne', line_color='#10b981')
+                fig.add_hline(y=metriques['usl'], line_dash='dot', 
+                             annotation_text='USL', line_color='#ef4444')
+                fig.add_hline(y=metriques['lsl'], line_dash='dot', 
+                             annotation_text='LSL', line_color='#ef4444')
+                fig.update_layout(template='plotly_dark', height=400, showlegend=True)
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                st.markdown("### Distribution des Valeurs")
+                fig = px.histogram(
+                    df, x='valeur', nbins=40,
+                    template='plotly_dark',
+                    color_discrete_sequence=['#38bdf8']
                 )
-                fig.update_layout(height=450)
+                fig.add_vline(x=metriques['usl'], line_color='red', annotation_text='USL')
+                fig.add_vline(x=metriques['lsl'], line_color='red', annotation_text='LSL')
+                fig.update_layout(height=400)
                 st.plotly_chart(fig, use_container_width=True)
     
-    # Tableau des dernières mesures
-    st.markdown("---")
-    st.markdown("### 📋 DERNIÈRES MESURES")
-    
-    if not df.empty:
-        affichage_df = df[['date_heure', 'reference_piece', 'operateur', 'valeur', 'machine']].head(15).copy()
-        affichage_df.columns = ['Date/Heure', 'Référence', 'Opérateur', 'Valeur', 'Machine']
+    elif page == "Saisie Mesures":
+        st.markdown("## Saisie de Nouvelles Mesures")
         
-        # Colorier le statut
-        st.dataframe(
-            affichage_df,
-            use_container_width=True,
-            hide_index=True
-        )
-
-
-def page_saisie_mesures(gestionnaire: DatabaseManager):
-    """Page Saisie de Mesures"""
-    st.subheader("➕ Saisie de Nouvelles Mesures")
-    
-    st.markdown("""
-    <div class="pro-card">
-        <p>Enregistrez les mesures de vos pièces en temps réel avec validation automatique.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Mode de saisie
-    mode = st.radio("Mode de saisie", ["Saisie Manuelle", "Importer Excel"], horizontal=True)
-    
-    if mode == "Saisie Manuelle":
-        with st.form("formulaire_mesures", clear_on_submit=True):
+        with st.form("formulaire_principal", clear_on_submit=True):
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                st.markdown("### 📦 PIÈCE")
-                type_data = st.selectbox("Type", ["SPC", "MSA"])
-                reference = st.text_input("Référence Pièce *").strip()
+                st.markdown("### Information Piece")
+                reference = st.text_input("Reference Piece", placeholder="Ex: P001")
                 machine = st.selectbox("Machine", ["M1", "M2", "M3", "M4", "M5"])
             
             with col2:
-                st.markdown("### 👤 OPÉRATEUR")
-                operateur = st.selectbox("Opérateur", 
+                st.markdown("### Information Operateur")
+                operateur = st.selectbox("Operateur", 
                                         ["Ahmed", "Mohamed", "Ali", "Fatima", "Hassan"])
-                equipe = st.selectbox("Équipe", ["Matin", "Après-midi", "Nuit"])
+                equipe = st.selectbox("Equipe", ["Matin", "Apres-midi", "Nuit"])
             
             with col3:
-                st.markdown("### ⚙️ LIMITES")
-                usl = st.number_input("USL (Limite Sup.)", value=12.5000, format="%.4f")
-                lsl = st.number_input("LSL (Limite Inf.)", value=11.5000, format="%.4f")
+                st.markdown("### Limites Acceptables")
+                usl = st.number_input("USL", value=12.5000, format="%.4f")
+                lsl = st.number_input("LSL", value=11.5000, format="%.4f")
             
             st.markdown("---")
-            st.markdown("### 📏 TROIS MESURES OBLIGATOIRES")
+            st.markdown("### Trois Mesures Obligatoires")
             
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -675,318 +701,152 @@ def page_saisie_mesures(gestionnaire: DatabaseManager):
             
             col1, col2 = st.columns(2)
             with col1:
-                type_defaut = st.selectbox("Type de Défaut", 
-                                          ["OK", "Diamètre", "Rugosité", "Rayure", "Autre"])
+                type_defaut = st.selectbox("Type de Defaut", 
+                                          ["OK", "Diametre", "Rugosite", "Rayure", "Autre"])
             with col2:
-                remarques = st.text_input("Remarques")
+                remarques = st.text_input("Remarques (optionnel)")
             
-            st.markdown("---")
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                submit = st.form_submit_button("ENREGISTRER", use_container_width=True, type="primary")
             
-            submit = st.form_submit_button(
-                "✅ ENREGISTRER MESURES",
-                use_container_width=True,
-                type="primary"
-            )
-        
         if submit:
-            # Validation
             if not reference:
-                st.error("❌ La référence est obligatoire")
+                st.error("Erreur: Reference obligatoire")
                 return
             
             if usl <= lsl:
-                st.error("❌ USL doit être > LSL")
+                st.error("Erreur: USL doit etre superieur a LSL")
                 return
             
             if mesure1 == 0 and mesure2 == 0 and mesure3 == 0:
-                st.error("❌ Au moins une mesure requise")
+                st.error("Erreur: Au moins une mesure requise")
                 return
             
             mesures = []
-            maintenant = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            ref_finale = f"{type_data}_{reference}"
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
             for essai, valeur in enumerate([mesure1, mesure2, mesure3], 1):
                 if valeur != 0:
                     mesures.append({
-                        'date_heure': maintenant,
-                        'reference_piece': ref_finale,
-                        'operateur': operateur,
-                        'essai': essai,
-                        'valeur': valeur,
-                        'lsl': lsl,
-                        'usl': usl,
-                        'machine': machine,
-                        'type_defaut': type_defaut,
-                        'severite': 3 if type_defaut != "OK" else 1,
-                        'occurrence': 1,
-                        'detection': 1
+                        'date_heure': now, 'reference_piece': reference,
+                        'operateur': operateur, 'essai': essai, 'valeur': valeur,
+                        'lsl': lsl, 'usl': usl, 'machine': machine,
+                        'type_defaut': type_defaut, 'severite': 3 if type_defaut != "OK" else 1,
+                        'occurrence': 1, 'detection': 1
                     })
             
-            if gestionnaire.ajouter_mesures(mesures):
-                st.success(f"✅ {len(mesures)} mesure(s) enregistrée(s) avec succès!")
+            if db.ajouter_mesures(mesures):
+                st.success(f"Succes: {len(mesures)} mesure(s) enregistree(s)!")
                 st.balloons()
                 st.rerun()
+            else:
+                st.error("Erreur lors de l'enregistrement")
     
-    else:
-        st.markdown("### 📥 IMPORTER UN FICHIER EXCEL")
-        uploaded = st.file_uploader("Sélectionnez un fichier Excel", type=['xlsx', 'xls'])
+    elif page == "Analyses SPC":
+        st.markdown("## Analyses SPC (Controle Statistique des Processus)")
         
-        if uploaded:
-            try:
-                df_import = pd.read_excel(uploaded)
-                st.dataframe(df_import, use_container_width=True)
-                
-                if st.button("✅ IMPORTER LES DONNÉES", use_container_width=True, type="primary"):
-                    mesures = []
-                    for idx, row in df_import.iterrows():
-                        mesures.append({
-                            'date_heure': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            'reference_piece': str(row.get('reference_piece', f'P{idx}')),
-                            'operateur': str(row.get('operateur', 'Unknown')),
-                            'essai': int(row.get('essai', 1)),
-                            'valeur': float(row.get('valeur', 0)),
-                            'lsl': float(row.get('lsl', 0)),
-                            'usl': float(row.get('usl', 0)),
-                            'machine': str(row.get('machine', 'M1')),
-                            'type_defaut': str(row.get('type_defaut', 'OK')),
-                            'severite': int(row.get('severite', 1)),
-                            'occurrence': int(row.get('occurrence', 1)),
-                            'detection': int(row.get('detection', 1))
-                        })
-                    
-                    if gestionnaire.ajouter_mesures(mesures):
-                        st.success(f"✅ {len(mesures)} enregistrements importés!")
-                        st.rerun()
-            except Exception as e:
-                st.error(f"❌ Erreur importation: {e}")
-
-
-def page_analyses_spc(df: pd.DataFrame, metriques: dict):
-    """Page Analyses SPC"""
-    st.subheader("📈 Analyses SPC (Contrôle Statistique)")
-    
-    if df.empty:
-        st.warning("⚠️ Pas de données disponibles")
-        return
-    
-    tab1, tab2, tab3, tab4 = st.tabs(["Carte de Contrôle", "Règles SPC", "Capabilité", "Machines"])
-    
-    with tab1:
-        st.markdown("### 📊 Carte de Contrôle X̄")
-        
-        moyenne = metriques['moyenne']
-        ecart_type = metriques['ecart_type']
-        ucl = moyenne + 3 * ecart_type
-        lcl = moyenne - 3 * ecart_type
-        
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("CL (Centre)", f"{moyenne:.4f}")
-        col2.metric("UCL (Sup.)", f"{ucl:.4f}")
-        col3.metric("LCL (Inf.)", f"{lcl:.4f}")
-        col4.metric("Écart-Type", f"{ecart_type:.4f}")
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=list(range(len(df))),
-            y=df['valeur'],
-            mode='lines+markers',
-            name='Valeurs',
-            line=dict(color='#3b82f6', width=2)
-        ))
-        fig.add_hline(y=moyenne, line_dash='dash', name='CL')
-        fig.add_hline(y=ucl, line_dash='dot', name='UCL', line_color='#ef4444')
-        fig.add_hline(y=lcl, line_dash='dot', name='LCL', line_color='#ef4444')
-        fig.update_layout(
-            title='Carte de Contrôle',
-            template='plotly_dark',
-            height=450
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        
-        hors_limites = df[(df['valeur'] > ucl) | (df['valeur'] < lcl)]
-        if not hors_limites.empty:
-            st.error(f"⚠️ {len(hors_limites)} point(s) hors contrôle détecté(s)")
+        if df.empty:
+            st.warning("Pas de donnees disponibles")
         else:
-            st.success("✅ Tous les points sont sous contrôle")
-    
-    with tab2:
-        st.markdown("### 🚦 RÈGLES SPC")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
+            mean = metriques['moyenne']
+            std = metriques['ecart_type']
+            ucl = mean + 3 * std
+            lcl = mean - 3 * std
+            
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("CL (Centre)", f"{mean:.4f}")
+            col2.metric("UCL (Limite Sup)", f"{ucl:.4f}")
+            col3.metric("LCL (Limite Inf)", f"{lcl:.4f}")
+            col4.metric("Ecart-Type", f"{std:.4f}")
+            
+            st.markdown("---")
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=list(range(len(df))), y=df['valeur'],
+                mode='lines+markers', name='Valeurs',
+                line=dict(color='#38bdf8', width=2),
+                marker=dict(size=5)
+            ))
+            fig.add_hline(y=mean, line_dash='dash', name='CL (Centre)')
+            fig.add_hline(y=ucl, line_dash='dot', line_color='#ef4444', name='UCL')
+            fig.add_hline(y=lcl, line_dash='dot', line_color='#ef4444', name='LCL')
+            fig.update_layout(template='plotly_dark', height=450, title="Carte de Controle")
+            st.plotly_chart(fig, use_container_width=True)
+            
             hors_limites = len(df[(df['valeur'] > ucl) | (df['valeur'] < lcl)])
             if hors_limites > 0:
-                st.error(f"❌ Règle 1: {hors_limites} point(s)")
+                st.error(f"Alerte: {hors_limites} point(s) hors controle!")
             else:
-                st.success("✅ Règle 1: OK")
-        
-        with col2:
-            st.info("📋 Règle 2: 7 points côté = Tendance")
-        
-        with col3:
-            st.info("📋 Règle 3: Tendance = Alert")
+                st.success("Tous les points sont sous controle")
     
-    with tab3:
-        st.markdown("### 📊 INDICES DE CAPABILITÉ")
+    elif page == "Capabilite":
+        st.markdown("## Analyse de Capabilite")
         
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Cp", f"{metriques['cp']:.2f}")
         col2.metric("Cpk", f"{metriques['cpk']:.2f}")
-        col3.metric("Pp", f"{metriques['cp']:.2f}")
-        col4.metric("Ppk", f"{metriques['cpk']:.2f}")
-    
-    with tab4:
-        if 'machine' in df.columns:
-            stats_machine = df.groupby('machine')['valeur'].agg(['count', 'mean', 'std']).reset_index()
-            st.dataframe(stats_machine, use_container_width=True)
-            
-            fig = px.box(df, x='machine', y='valeur', color='machine', template='plotly_dark',
-                        title='Variation par Machine')
+        col3.metric("USL", f"{metriques['usl']:.4f}")
+        col4.metric("LSL", f"{metriques['lsl']:.4f}")
+        
+        st.markdown("---")
+        
+        if not df.empty:
+            fig = px.histogram(
+                df, x='valeur', nbins=40,
+                template='plotly_dark',
+                color_discrete_sequence=['#38bdf8'],
+                title="Distribution des Valeurs"
+            )
+            fig.add_vline(x=metriques['usl'], line_color='red')
+            fig.add_vline(x=metriques['lsl'], line_color='red')
+            fig.update_layout(height=450)
             st.plotly_chart(fig, use_container_width=True)
-
-
-def page_capabilite(df: pd.DataFrame, metriques: dict):
-    """Page Capabilité"""
-    st.subheader("🔍 Analyse de Capabilité")
     
-    if df.empty:
-        st.warning("⚠️ Pas de données")
-        return
+    elif page == "Pareto":
+        st.markdown("## Analyse Pareto")
+        
+        if df.empty:
+            st.warning("Pas de donnees")
+        else:
+            defauts = df[df['type_defaut'] != 'OK']
+            
+            if defauts.empty:
+                st.success("Aucun defaut detecte!")
+            else:
+                pareto = defauts['type_defaut'].value_counts().reset_index()
+                pareto.columns = ['Type', 'Nombre']
+                pareto['Cumul %'] = (pareto['Nombre'].cumsum() / pareto['Nombre'].sum() * 100)
+                
+                fig = go.Figure()
+                fig.add_trace(go.Bar(
+                    x=pareto['Type'], y=pareto['Nombre'],
+                    name='Nombre de Defauts',
+                    marker_color='#38bdf8'
+                ))
+                fig.add_trace(go.Scatter(
+                    x=pareto['Type'], y=pareto['Cumul %'], 
+                    yaxis='y2', mode='lines+markers',
+                    name='Cumul %',
+                    line=dict(color='#ef4444', width=2)
+                ))
+                fig.update_layout(
+                    yaxis2=dict(side='right', range=[0, 110]),
+                    template='plotly_dark',
+                    height=450,
+                    title="Diagramme de Pareto"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                st.markdown("---")
+                st.dataframe(pareto, use_container_width=True, hide_index=True)
     
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Cp", f"{metriques['cp']:.2f}")
-    col2.metric("Cpk", f"{metriques['cpk']:.2f}")
-    col3.metric("USL", f"{metriques['usl']:.4f}")
-    col4.metric("LSL", f"{metriques['lsl']:.4f}")
-    
-    st.markdown("---")
-    
-    etat, couleur = evaluer_capabilite(metriques['cpk'])
-    st.markdown(f"<h3 style='color: {couleur};'>{etat}</h3>", unsafe_allow_html=True)
-    
-    # Histogramme avec limites
-    fig = px.histogram(df, x='valeur', nbins=40, template='plotly_dark', title='Distribution')
-    fig.add_vline(x=metriques['usl'], line_color='red', annotation_text='USL')
-    fig.add_vline(x=metriques['lsl'], line_color='red', annotation_text='LSL')
-    fig.update_layout(height=450)
-    st.plotly_chart(fig, use_container_width=True)
-
-
-def page_pareto(df: pd.DataFrame):
-    """Page Pareto"""
-    st.subheader("📉 Analyse Pareto")
-    
-    defauts = df[df['type_defaut'] != 'OK']
-    
-    if defauts.empty:
-        st.success("✅ Aucun défaut détecté")
-        return
-    
-    pareto_data = defauts['type_defaut'].value_counts().reset_index()
-    pareto_data.columns = ['Type', 'Nombre']
-    pareto_data['Cumul %'] = (pareto_data['Nombre'].cumsum() / pareto_data['Nombre'].sum() * 100)
-    
-    fig = go.Figure()
-    fig.add_trace(go.Bar(x=pareto_data['Type'], y=pareto_data['Nombre'], name='Défauts'))
-    fig.add_trace(go.Scatter(x=pareto_data['Type'], y=pareto_data['Cumul %'], yaxis='y2', 
-                            mode='lines+markers', name='Cumul %'))
-    fig.update_layout(
-        yaxis2=dict(side='right', range=[0, 110]),
-        template='plotly_dark',
-        height=450
-    )
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.dataframe(pareto_data, use_container_width=True)
-
-
-def page_msa(df: pd.DataFrame):
-    """Page MSA"""
-    st.subheader("⚙️ Analyse Système de Mesure (MSA)")
-    
-    msa_data = df[df['reference_piece'].str.contains('MSA', case=False, na=False)]
-    
-    if msa_data.empty:
-        st.info("ℹ️ Aucune donnée MSA. Ajoutez des pièces avec 'MSA' dans la référence.")
-        return
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Mesures MSA", len(msa_data))
-    col2.metric("Opérateurs", msa_data['operateur'].nunique())
-    col3.metric("Pièces", msa_data['reference_piece'].nunique())
-    
-    st.markdown("---")
-    st.info("📋 Analyse MSA en cours de développement...")
-
-
-def page_amdec(df: pd.DataFrame):
-    """Page AMDEC"""
-    st.subheader("⚠️ Analyse des Modes de Défaillance (AMDEC)")
-    
-    df_amdec = df.copy()
-    df_amdec['RPN'] = df_amdec['severite'] * df_amdec['occurrence'] * df_amdec['detection']
-    df_amdec = df_amdec.sort_values('RPN', ascending=False)
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("RPN Max", int(df_amdec['RPN'].max()))
-    col2.metric("RPN Moyen", f"{df_amdec['RPN'].mean():.0f}")
-    col3.metric("Risques Critiques", len(df_amdec[df_amdec['RPN'] >= 150]))
-    
-    st.markdown("---")
-    
-    affichage = df_amdec[['reference_piece', 'type_defaut', 'severite', 'occurrence', 'detection', 'RPN']].head(20)
-    affichage.columns = ['Référence', 'Type Défaut', 'Sévérité', 'Occurrence', 'Détection', 'RPN']
-    
-    st.dataframe(affichage, use_container_width=True)
-
-
-def main():
-    """Fonction principale"""
-    inject_css()
-    
-    # Initialiser le gestionnaire
-    gestionnaire = obtenir_gestionnaire_db()
-    
-    # Charger les données
-    df = gestionnaire.obtenir_toutes_mesures()
-    
-    # Calculer les métriques
-    metriques = calculer_metriques(df)
-    
-    # Afficher l'interface
-    render_header()
-    page = render_sidebar(metriques)
-    
-    # Pages
-    if page == "📊 Tableau de Bord":
-        page_tableau_bord(df, metriques)
-    
-    elif page == "➕ Saisie de Mesures":
-        page_saisie_mesures(gestionnaire)
-    
-    elif page == "📈 Analyses SPC":
-        page_analyses_spc(df, metriques)
-    
-    elif page == "🔍 Capabilité":
-        page_capabilite(df, metriques)
-    
-    elif page == "📉 Pareto":
-        page_pareto(df)
-    
-    elif page == "⚙️ MSA":
-        page_msa(df)
-    
-    elif page == "⚠️ AMDEC":
-        page_amdec(df)
-    
-    # Footer
-    st.markdown("---")
+    # FOOTER
     st.markdown("""
-    <div style="text-align: center; padding: 20px; color: #64748b;">
-        <p><strong>🎯 SpecSense AI v2.0</strong> | Plateforme de Gestion de la Qualité</p>
-        <p>Production Ready | © 2024 | France</p>
+    <div class="footer-premium">
+        <p><strong>SpecSense AI v2.0</strong> - Plateforme Premium de Qualite</p>
+        <p>Production Ready | 2024</p>
     </div>
     """, unsafe_allow_html=True)
 
