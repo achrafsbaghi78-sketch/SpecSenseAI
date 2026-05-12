@@ -670,7 +670,7 @@ Nombre de mesures MSA = {len(msa_data)}
                 template="plotly_dark"
             )
 
-            plot_chart(fig, "msa_grr_box")
+                plot_chart(fig, "msa_grr_box")
 
             context = f"""
 Variation totale = {var_total:.8f}
