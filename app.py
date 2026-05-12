@@ -629,32 +629,47 @@ Nombre de mesures MSA = {len(msa_data)}
 """
         show_ai_analysis("MSA Type 1", context)
 
-    with tab_grr:
+        with tab_grr:
         st.markdown("### ⚙️ Gage R&R")
+
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
         else:
             df_grr = msa_data.copy()
+
             var_total = df_grr["Measurement"].var()
             var_operator = df_grr.groupby("Operator")["Measurement"].mean().var()
             var_repeat = df_grr.groupby(["Part_ID", "Operator"])["Measurement"].var().mean()
+
             var_total = 0 if pd.isna(var_total) else var_total
             var_operator = 0 if pd.isna(var_operator) else var_operator
             var_repeat = 0 if pd.isna(var_repeat) else var_repeat
+
             var_grr = var_operator + var_repeat
             percent_grr = (var_grr / var_total) * 100 if var_total > 0 else 0
+
             ndc = 1.41 * (var_total ** 0.5) / (var_grr ** 0.5) if var_grr > 0 else 0
+
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Variation totale", f"{var_total:.8f}")
             c2.metric("GRR", f"{var_grr:.8f}")
             c3.metric("%GRR", f"{percent_grr:.2f}%")
             c4.metric("ndc", f"{ndc:.1f}")
-            
-        if ndc < 5:
+
+            if ndc < 5:
                 st.error("❌ ndc < 5 : système de mesure faible")
-        else:
+            else:
                 st.success("✅ ndc acceptable")
-            fig = px.box(df_grr, x="Operator", y="Measurement", color="Operator", title="Variation par opérateur", template="plotly_dark")
+
+            fig = px.box(
+                df_grr,
+                x="Operator",
+                y="Measurement",
+                color="Operator",
+                title="Variation par opérateur",
+                template="plotly_dark"
+            )
+
             plot_chart(fig, "msa_grr_box")
 
             context = f"""
@@ -663,6 +678,7 @@ Variation opérateur = {var_operator:.8f}
 Variation répétabilité = {var_repeat:.8f}
 GRR = {var_grr:.8f}
 %GRR = {percent_grr:.2f}
+ndc = {ndc:.2f}
 """
             show_ai_analysis("Gage R&R", context)
 
