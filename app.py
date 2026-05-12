@@ -296,20 +296,27 @@ def save_to_google_sheet(row: dict) -> None:
 
 def prepare_data(df: pd.DataFrame) -> dict:
     if df.empty:
-        return {
-            "msa_data": pd.DataFrame(columns=REQUIRED_COLS),
-            "spc_data": pd.DataFrame(columns=REQUIRED_COLS),
-            "total": 0,
-            "msa_count": 0,
-            "spc_count": 0,
-            "mean_val": 0.0,
-            "std_val": 0.0,
-            "usl": 0.0,
-            "lsl": 0.0,
-            "cp": 0.0,
-            "cpk": 0.0,
-        }
+          return {
+                "msa_data": msa_data,
+                "spc_data": spc_data,
+                "total": len(df),
+                "msa_count": len(msa_data),
+                "spc_count": len(spc_data),
+                "mean_val": mean_val,
+                "std_val": std_val,
+                "usl": usl,
+                "lsl": lsl,
+                "cp": cp,
+                "cpk": cpk,
+                "ppm": ppm,   # ✅ ضف هاد السطر
+            }
+    # ====== PPM Calculation ======
+    non_conform = df[
+        (df["Measurement"] > usl) |
+        (df["Measurement"] < lsl)
+    ]
 
+    ppm = (len(non_conform) / len(df)) * 1_000_000 if len(df) > 0 else 0
     msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
     spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", case=False, na=False)].copy()
 
@@ -636,12 +643,17 @@ Nombre de mesures MSA = {len(msa_data)}
             var_repeat = 0 if pd.isna(var_repeat) else var_repeat
             var_grr = var_operator + var_repeat
             percent_grr = (var_grr / var_total) * 100 if var_total > 0 else 0
-
-            c1, c2, c3 = st.columns(3)
+            ndc = 1.41 * (var_total ** 0.5) / (var_grr ** 0.5) if var_grr > 0 else 0
+            c1, c2, c3, c4 = st.columns(4)
             c1.metric("Variation totale", f"{var_total:.8f}")
             c2.metric("GRR", f"{var_grr:.8f}")
             c3.metric("%GRR", f"{percent_grr:.2f}%")
-
+            c4.metric("ndc", f"{ndc:.1f}")
+            
+        if ndc < 5:
+                st.error("❌ ndc < 5 : système de mesure faible")
+        else:
+                st.success("✅ ndc acceptable")
             fig = px.box(df_grr, x="Operator", y="Measurement", color="Operator", title="Variation par opérateur", template="plotly_dark")
             plot_chart(fig, "msa_grr_box")
 
@@ -1018,11 +1030,12 @@ def page_ai(metrics: dict) -> None:
     question = st.text_area("Pose ta question qualité", key="ai_question")
 
     if st.button("Analyser", key="ai_analyze_button"):
+
         if not question.strip():
             st.warning("Écris une question")
             return
 
-    prompt = f"""
+        prompt = f"""
 Tu es un expert qualité automobile.
 
 Données actuelles :
@@ -1044,11 +1057,11 @@ Donne :
 4. Actions correctives
 """
 
-    with st.spinner("🤖 Analyse en cours..."):
-        answer = ask_hf_ai(prompt)
+        with st.spinner("🤖 Analyse en cours..."):
+            answer = ask_hf_ai(prompt)
 
-    st.markdown("### 🧠 Réponse IA")
-    st.success(answer)
+        st.markdown("### 🧠 Réponse IA")
+        st.success(answer)
 
 def render_pdf_section(metrics: dict) -> None:
     st.markdown("---")
@@ -1105,7 +1118,7 @@ def render_header() -> None:
 def render_global_kpis(metrics: dict) -> None:
     st.markdown("### 📊 KPIs Globaux")
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     total_rows = metrics.get("total", 0)
     msa_count = metrics.get("msa_count", 0)
@@ -1116,7 +1129,8 @@ def render_global_kpis(metrics: dict) -> None:
     col2.metric("MSA", msa_count)
     col3.metric("SPC", spc_count)
     col4.metric("Moyenne", f"{avg_value:.2f}")
-
+    ppm_value = metrics.get("ppm", 0)
+    col5.metric("PPM", f"{ppm_value:.0f}")
     st.markdown("<br>", unsafe_allow_html=True)
 # =========================
 # MAIN
