@@ -629,7 +629,7 @@ Nombre de mesures MSA = {len(msa_data)}
 """
         show_ai_analysis("MSA Type 1", context)
 
-        with tab_grr:
+           with tab_grr:
         st.markdown("### ⚙️ Gage R&R")
 
         if msa_data.empty:
