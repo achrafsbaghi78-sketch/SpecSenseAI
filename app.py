@@ -181,22 +181,33 @@ def ask_hf_ai(question: str) -> str:
 
     try:
         client = InferenceClient(token=st.secrets["HUGGINGFACE_TOKEN"])
-        response = client.chat.completions.create(
+
+        prompt = f"""
+Tu es un expert qualité automobile.
+
+Réponds en français professionnel et clair.
+
+Question :
+{question}
+
+Donne :
+1. Interprétation
+2. Causes possibles
+3. Actions immédiates
+4. Actions correctives
+"""
+
+        response = client.text_generation(
             model="mistralai/Mistral-7B-Instruct-v0.2",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Tu es un expert qualité automobile. Réponds en français simple, professionnel et avec des actions concrètes.",
-                },
-                {"role": "user", "content": question},
-            ],
-            max_tokens=650,
-            temperature=0.3,
+            prompt=prompt,
+            max_new_tokens=500,
+            temperature=0.3
         )
-        return response.choices[0].message.content
+
+        return response
+
     except Exception as exc:
         return f"❌ Erreur IA : {exc}"
-
 
 def generate_ai_module_analysis(module_name: str, context: str) -> str:
     prompt = f"""
