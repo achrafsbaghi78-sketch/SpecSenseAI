@@ -680,7 +680,7 @@ GRR = {var_grr:.8f}
 %GRR = {percent_grr:.2f}
 ndc = {ndc:.2f}
 """
-            show_ai_analysis("Gage R&R", context)
+                show_ai_analysis("Gage R&R", context)
 
     with tab_bias:
         st.markdown("### 🎯 Bias")
