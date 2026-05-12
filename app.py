@@ -661,7 +661,7 @@ Nombre de mesures MSA = {len(msa_data)}
         else:
                 st.success("✅ ndc acceptable")
 
-            fig = px.box(
+                fig = px.box(
                 df_grr,
                 x="Operator",
                 y="Measurement",
