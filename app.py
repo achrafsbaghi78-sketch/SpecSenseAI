@@ -629,7 +629,7 @@ Nombre de mesures MSA = {len(msa_data)}
 """
         show_ai_analysis("MSA Type 1", context)
 
-           with tab_grr:
+     with tab_grr:
         st.markdown("### ⚙️ Gage R&R")
 
         if msa_data.empty:
@@ -656,9 +656,9 @@ Nombre de mesures MSA = {len(msa_data)}
             c3.metric("%GRR", f"{percent_grr:.2f}%")
             c4.metric("ndc", f"{ndc:.1f}")
 
-            if ndc < 5:
+        if ndc < 5:
                 st.error("❌ ndc < 5 : système de mesure faible")
-            else:
+        else:
                 st.success("✅ ndc acceptable")
 
             fig = px.box(
