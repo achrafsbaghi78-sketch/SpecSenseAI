@@ -296,27 +296,21 @@ def save_to_google_sheet(row: dict) -> None:
 
 def prepare_data(df: pd.DataFrame) -> dict:
     if df.empty:
-          return {
-                "msa_data": msa_data,
-                "spc_data": spc_data,
-                "total": len(df),
-                "msa_count": len(msa_data),
-                "spc_count": len(spc_data),
-                "mean_val": mean_val,
-                "std_val": std_val,
-                "usl": usl,
-                "lsl": lsl,
-                "cp": cp,
-                "cpk": cpk,
-                "ppm": ppm,   # ✅ ضف هاد السطر
-            }
-    # ====== PPM Calculation ======
-    non_conform = df[
-        (df["Measurement"] > usl) |
-        (df["Measurement"] < lsl)
-    ]
+        return {
+            "msa_data": pd.DataFrame(columns=REQUIRED_COLS),
+            "spc_data": pd.DataFrame(columns=REQUIRED_COLS),
+            "total": 0,
+            "msa_count": 0,
+            "spc_count": 0,
+            "mean_val": 0.0,
+            "std_val": 0.0,
+            "usl": 0.0,
+            "lsl": 0.0,
+            "cp": 0.0,
+            "cpk": 0.0,
+            "ppm": 0.0,
+        }
 
-    ppm = (len(non_conform) / len(df)) * 1_000_000 if len(df) > 0 else 0
     msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
     spc_data = df[df["Part_ID"].astype(str).str.contains("SPC", case=False, na=False)].copy()
 
@@ -338,6 +332,13 @@ def prepare_data(df: pd.DataFrame) -> dict:
         cp = 0.0
         cpk = 0.0
 
+    non_conform = df[
+        (df["Measurement"] > usl) |
+        (df["Measurement"] < lsl)
+    ]
+
+    ppm = (len(non_conform) / len(df)) * 1_000_000 if len(df) > 0 else 0
+
     return {
         "msa_data": msa_data,
         "spc_data": spc_data,
@@ -350,6 +351,7 @@ def prepare_data(df: pd.DataFrame) -> dict:
         "lsl": lsl,
         "cp": cp,
         "cpk": cpk,
+        "ppm": ppm,
     }
 
 
