@@ -182,7 +182,7 @@ def ask_hf_ai(question: str) -> str:
     try:
         client = InferenceClient(token=st.secrets["HUGGINGFACE_TOKEN"])
         response = client.chat.completions.create(
-            model="Qwen/Qwen2.5-7B-Instruct",
+            model="HuggingFaceH4/zephyr-7b-beta",
             messages=[
                 {
                     "role": "system",
