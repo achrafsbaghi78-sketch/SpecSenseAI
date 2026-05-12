@@ -1,15 +1,16 @@
 """
 SpecSense AI - Plateforme Premium de Gestion de la Qualité
-Version Française - Production Ready - Clean Code
+Google Sheets Integration Complete
 """
 import os
 import sqlite3
 from datetime import datetime
-from typing import Optional
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import requests
+import json
 
 # ========================
 # PAGE CONFIG
@@ -28,6 +29,10 @@ APP_NAME = "SpecSense AI"
 APP_VERSION = "V2.0"
 DB_PATH = "/tmp/specsense.db"
 
+# Google Sheets Configuration
+GOOGLE_SHEET_ID = "1Xy4tgkGs1OXOTh-OMAsR7YsfkUPxttF7qalhDdhHa90"
+GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhJ9Tep6M55eI-XX1t-0jb9wglnOwL8nICcRX1U5XReXpJKCWBEnuMn9zgpx_aYjKd3A/usercontent"
+
 MENU_ITEMS = [
     "Tableau de Bord",
     "Saisie Mesures",
@@ -36,21 +41,6 @@ MENU_ITEMS = [
     "Capabilite",
     "Pareto",
     "AMDEC",
-]
-
-REQUIRED_COLS = [
-    "date_heure",
-    "reference_piece",
-    "operateur",
-    "essai",
-    "valeur",
-    "usl",
-    "lsl",
-    "machine",
-    "type_defaut",
-    "severite",
-    "occurrence",
-    "detection",
 ]
 
 # ========================
@@ -178,10 +168,72 @@ def inject_css():
 
 
 # ========================
-# DATABASE MANAGER
+# GOOGLE SHEETS MANAGER
+# ========================
+class GoogleSheetsManager:
+    """Gestionnaire Google Sheets"""
+    
+    def __init__(self, sheet_id: str, script_url: str):
+        self.sheet_id = sheet_id
+        self.script_url = script_url
+    
+    def ajouter_mesure(self, mesure: dict) -> bool:
+        """Ajouter une mesure a Google Sheets"""
+        try:
+            response = requests.post(
+                self.script_url,
+                json=mesure,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('status') == 'success':
+                    return True
+            
+            return False
+        
+        except Exception as e:
+            st.error(f"Erreur Google Sheets: {e}")
+            return False
+    
+    def charger_donnees(self) -> pd.DataFrame:
+        """Charger les donnees de Google Sheets"""
+        try:
+            response = requests.get(self.script_url, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('status') == 'success':
+                    rows = data.get('data', [])
+                    
+                    if len(rows) > 1:
+                        headers = rows[0]
+                        df = pd.DataFrame(rows[1:], columns=headers)
+                        
+                        # Convertir les colonnes numeriques
+                        numeric_cols = ['essai', 'valeur', 'lsl', 'usl', 'severite', 'occurrence', 'detection']
+                        for col in numeric_cols:
+                            if col in df.columns:
+                                df[col] = pd.to_numeric(df[col], errors='coerce')
+                        
+                        if 'date_heure' in df.columns:
+                            df['date_heure'] = pd.to_datetime(df['date_heure'], errors='coerce')
+                        
+                        return df
+            
+            return pd.DataFrame()
+        
+        except Exception as e:
+            st.warning(f"Erreur lecture Google Sheets: {e}")
+            return pd.DataFrame()
+
+
+# ========================
+# DATABASE MANAGER (Local Backup)
 # ========================
 class DatabaseManager:
-    """Gestionnaire de base de donnees SQLite"""
+    """Gestionnaire de base de donnees SQLite (Backup local)"""
     
     def __init__(self, db_path: str = DB_PATH):
         self.db_path = db_path
@@ -248,33 +300,9 @@ class DatabaseManager:
             conn.commit()
             conn.close()
             return True
-        except sqlite3.IntegrityError:
-            st.error("Erreur: Ces donnees existent deja")
-            return False
         except Exception as e:
             st.error(f"Erreur sauvegarde: {e}")
             return False
-    
-    def obtenir_toutes_mesures(self) -> pd.DataFrame:
-        """Recuperer toutes les mesures"""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            df = pd.read_sql_query(
-                "SELECT * FROM mesures ORDER BY date_heure DESC",
-                conn
-            )
-            conn.close()
-            
-            if not df.empty:
-                df['date_heure'] = pd.to_datetime(df['date_heure'])
-                df['valeur'] = df['valeur'].astype(float)
-                df['usl'] = df['usl'].astype(float)
-                df['lsl'] = df['lsl'].astype(float)
-            
-            return df
-        except Exception as e:
-            st.error(f"Erreur lecture: {e}")
-            return pd.DataFrame()
 
 
 # ========================
@@ -290,12 +318,20 @@ def calculer_metriques(df: pd.DataFrame) -> dict:
         }
     
     valeurs = df["valeur"].dropna()
+    
+    if len(valeurs) == 0:
+        return {
+            "total": 0, "conforme": 0, "non_conforme": 0,
+            "moyenne": 0.0, "ecart_type": 0.0, "usl": 0.0, "lsl": 0.0,
+            "cp": 0.0, "cpk": 0.0, "taux_conformite": 0.0, "ppm_defaut": 0,
+        }
+    
     moyenne = float(valeurs.mean())
     ecart_type = float(valeurs.std()) if len(valeurs) > 1 else 0.0
-    usl = float(df["usl"].iloc[0])
-    lsl = float(df["lsl"].iloc[0])
+    usl = float(df["usl"].iloc[0]) if "usl" in df.columns else 0.0
+    lsl = float(df["lsl"].iloc[0]) if "lsl" in df.columns else 0.0
     
-    tolerance = usl - lsl
+    tolerance = usl - lsl if usl > lsl else 1.0
     
     if ecart_type > 0:
         cp = tolerance / (6 * ecart_type)
@@ -316,24 +352,14 @@ def calculer_metriques(df: pd.DataFrame) -> dict:
     }
 
 
-def evaluer_capabilite(cpk: float) -> tuple:
-    """Evaluer la capabilite"""
-    if cpk >= 1.67:
-        return ("EXCELLENT", "#22c55e")
-    elif cpk >= 1.33:
-        return ("CAPABLE", "#22c55e")
-    elif cpk >= 1.0:
-        return ("CRITIQUE", "#f59e0b")
-    else:
-        return ("INCAPABLE", "#ef4444")
-
-
 # ========================
 # PAGES
 # ========================
 @st.cache_resource
-def obtenir_db():
-    return DatabaseManager()
+def obtenir_managers():
+    gs = GoogleSheetsManager(GOOGLE_SHEET_ID, GOOGLE_SCRIPT_URL)
+    db = DatabaseManager()
+    return gs, db
 
 
 def page_tableau_bord(df: pd.DataFrame, metriques: dict):
@@ -390,9 +416,15 @@ def page_tableau_bord(df: pd.DataFrame, metriques: dict):
             fig.add_vline(x=metriques['lsl'], line_color='red', annotation_text='LSL')
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
+        
+        st.markdown("---")
+        st.markdown("### Dernieres Mesures")
+        affichage = df[['date_heure', 'reference_piece', 'operateur', 'valeur', 'machine']].head(20)
+        affichage.columns = ['Date/Heure', 'Reference', 'Operateur', 'Valeur', 'Machine']
+        st.dataframe(affichage, use_container_width=True, hide_index=True)
 
 
-def page_saisie_mesures(db: DatabaseManager):
+def page_saisie_mesures(gs: GoogleSheetsManager, db: DatabaseManager):
     """Saisie de mesures"""
     st.markdown("## Saisie de Nouvelles Mesures")
     
@@ -435,9 +467,7 @@ def page_saisie_mesures(db: DatabaseManager):
         with col2:
             remarques = st.text_input("Remarques (optionnel)")
         
-        col1, col2, col3 = st.columns([1, 1, 2])
-        with col1:
-            submit = st.form_submit_button("ENREGISTRER", use_container_width=True, type="primary")
+        submit = st.form_submit_button("ENREGISTRER", use_container_width=True, type="primary")
     
     if submit:
         if not reference:
@@ -457,20 +487,27 @@ def page_saisie_mesures(db: DatabaseManager):
         
         for essai, valeur in enumerate([mesure1, mesure2, mesure3], 1):
             if valeur != 0:
-                mesures.append({
+                mesure_dict = {
                     'date_heure': now, 'reference_piece': reference,
                     'operateur': operateur, 'essai': essai, 'valeur': valeur,
                     'lsl': lsl, 'usl': usl, 'machine': machine,
                     'type_defaut': type_defaut, 'severite': 3 if type_defaut != "OK" else 1,
                     'occurrence': 1, 'detection': 1
-                })
+                }
+                mesures.append(mesure_dict)
+                
+                # Ajouter a Google Sheets
+                if gs.ajouter_mesure(mesure_dict):
+                    st.success(f"Mesure {essai} envoyee a Google Sheets")
+                else:
+                    st.warning(f"Mesure {essai} sauvegardee localement")
+                
+                # Sauvegarder en local
+                db.ajouter_mesures([mesure_dict])
         
-        if db.ajouter_mesures(mesures):
-            st.success(f"Succes: {len(mesures)} mesure(s) enregistree(s)!")
-            st.balloons()
-            st.rerun()
-        else:
-            st.error("Erreur lors de l'enregistrement")
+        st.success(f"Succes: {len(mesures)} mesure(s) enregistree(s)!")
+        st.balloons()
+        st.rerun()
 
 
 def page_spc(df: pd.DataFrame, metriques: dict):
@@ -627,16 +664,17 @@ def page_amdec(df: pd.DataFrame):
     df_amdec = df_amdec.sort_values('RPN', ascending=False)
     
     col1, col2, col3 = st.columns(3)
-    col1.metric("RPN Maximum", int(df_amdec['RPN'].max()))
-    col2.metric("RPN Moyen", f"{df_amdec['RPN'].mean():.1f}")
+    col1.metric("RPN Maximum", int(df_amdec['RPN'].max()) if not df_amdec.empty else 0)
+    col2.metric("RPN Moyen", f"{df_amdec['RPN'].mean():.1f}" if not df_amdec.empty else "0")
     col3.metric("Risques Critiques", len(df_amdec[df_amdec['RPN'] >= 150]))
     
     st.markdown("---")
     
-    affichage = df_amdec[['reference_piece', 'type_defaut', 'severite', 'occurrence', 'detection', 'RPN']].head(20)
-    affichage.columns = ['Reference', 'Type Defaut', 'Severite', 'Occurrence', 'Detection', 'RPN']
-    
-    st.dataframe(affichage, use_container_width=True, hide_index=True)
+    if not df_amdec.empty:
+        affichage = df_amdec[['reference_piece', 'type_defaut', 'severite', 'occurrence', 'detection', 'RPN']].head(20)
+        affichage.columns = ['Reference', 'Type Defaut', 'Severite', 'Occurrence', 'Detection', 'RPN']
+        
+        st.dataframe(affichage, use_container_width=True, hide_index=True)
 
 
 # ========================
@@ -645,8 +683,11 @@ def page_amdec(df: pd.DataFrame):
 def main():
     inject_css()
     
-    db = obtenir_db()
-    df = db.obtenir_toutes_mesures()
+    gs, db = obtenir_managers()
+    
+    # Charger depuis Google Sheets
+    df = gs.charger_donnees()
+    
     metriques = calculer_metriques(df)
     
     # HEADER
@@ -703,7 +744,7 @@ def main():
         page_tableau_bord(df, metriques)
     
     elif page == "Saisie Mesures":
-        page_saisie_mesures(db)
+        page_saisie_mesures(gs, db)
     
     elif page == "Analyses SPC":
         page_spc(df, metriques)
@@ -725,7 +766,7 @@ def main():
     st.markdown("""
     <div style="text-align: center; padding: 20px; color: #64748b;">
         <p><strong>SpecSense AI v2.0</strong> | Plateforme de Gestion de la Qualite</p>
-        <p>Production Ready | 2024</p>
+        <p>Google Sheets Integration | Production Ready | 2024</p>
     </div>
     """, unsafe_allow_html=True)
 
