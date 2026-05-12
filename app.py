@@ -672,7 +672,7 @@ Nombre de mesures MSA = {len(msa_data)}
 
                 plot_chart(fig, "msa_grr_box")
 
-            context = f"""
+                context = f"""
 Variation totale = {var_total:.8f}
 Variation opérateur = {var_operator:.8f}
 Variation répétabilité = {var_repeat:.8f}
