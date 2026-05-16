@@ -181,33 +181,22 @@ def ask_hf_ai(question: str) -> str:
 
     try:
         client = InferenceClient(token=st.secrets["HUGGINGFACE_TOKEN"])
-
-        prompt = f"""
-Tu es un expert qualité automobile.
-
-Réponds en français professionnel et clair.
-
-Question :
-{question}
-
-Donne :
-1. Interprétation
-2. Causes possibles
-3. Actions immédiates
-4. Actions correctives
-"""
-
-        response = client.text_generation(
-            model="mistralai/Mistral-7B-Instruct-v0.2",
-            prompt=prompt,
-            max_new_tokens=500,
-            temperature=0.3
+        response = client.chat.completions.create(
+            model="Qwen/Qwen2.5-7B-Instruct",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Tu es un expert qualité automobile. Réponds en français simple, professionnel et avec des actions concrètes.",
+                },
+                {"role": "user", "content": question},
+            ],
+            max_tokens=650,
+            temperature=0.3,
         )
-
-        return response
-
+        return response.choices[0].message.content
     except Exception as exc:
         return f"❌ Erreur IA : {exc}"
+
 
 def generate_ai_module_analysis(module_name: str, context: str) -> str:
     prompt = f"""
@@ -319,7 +308,6 @@ def prepare_data(df: pd.DataFrame) -> dict:
             "lsl": 0.0,
             "cp": 0.0,
             "cpk": 0.0,
-            "ppm": 0.0,
         }
 
     msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
@@ -343,13 +331,6 @@ def prepare_data(df: pd.DataFrame) -> dict:
         cp = 0.0
         cpk = 0.0
 
-    non_conform = df[
-        (df["Measurement"] > usl) |
-        (df["Measurement"] < lsl)
-    ]
-
-    ppm = (len(non_conform) / len(df)) * 1_000_000 if len(df) > 0 else 0
-
     return {
         "msa_data": msa_data,
         "spc_data": spc_data,
@@ -362,7 +343,6 @@ def prepare_data(df: pd.DataFrame) -> dict:
         "lsl": lsl,
         "cp": cp,
         "cpk": cpk,
-        "ppm": ppm,
     }
 
 
@@ -644,56 +624,35 @@ Nombre de mesures MSA = {len(msa_data)}
 
     with tab_grr:
         st.markdown("### ⚙️ Gage R&R")
-
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
         else:
             df_grr = msa_data.copy()
-
             var_total = df_grr["Measurement"].var()
             var_operator = df_grr.groupby("Operator")["Measurement"].mean().var()
             var_repeat = df_grr.groupby(["Part_ID", "Operator"])["Measurement"].var().mean()
-
             var_total = 0 if pd.isna(var_total) else var_total
             var_operator = 0 if pd.isna(var_operator) else var_operator
             var_repeat = 0 if pd.isna(var_repeat) else var_repeat
-
             var_grr = var_operator + var_repeat
             percent_grr = (var_grr / var_total) * 100 if var_total > 0 else 0
 
-            ndc = 1.41 * (var_total ** 0.5) / (var_grr ** 0.5) if var_grr > 0 else 0
-
-            c1, c2, c3, c4 = st.columns(4)
+            c1, c2, c3 = st.columns(3)
             c1.metric("Variation totale", f"{var_total:.8f}")
             c2.metric("GRR", f"{var_grr:.8f}")
             c3.metric("%GRR", f"{percent_grr:.2f}%")
-            c4.metric("ndc", f"{ndc:.1f}")
 
-        if ndc < 5:
-                st.error("❌ ndc < 5 : système de mesure faible")
-        else:
-                st.success("✅ ndc acceptable")
+            fig = px.box(df_grr, x="Operator", y="Measurement", color="Operator", title="Variation par opérateur", template="plotly_dark")
+            plot_chart(fig, "msa_grr_box")
 
-                fig = px.box(
-                df_grr,
-                x="Operator",
-                y="Measurement",
-                color="Operator",
-                title="Variation par opérateur",
-                template="plotly_dark"
-            )
-
-                plot_chart(fig, "msa_grr_box")
-
-                context = f"""
+            context = f"""
 Variation totale = {var_total:.8f}
 Variation opérateur = {var_operator:.8f}
 Variation répétabilité = {var_repeat:.8f}
 GRR = {var_grr:.8f}
 %GRR = {percent_grr:.2f}
-ndc = {ndc:.2f}
 """
-                show_ai_analysis("Gage R&R", context)
+            show_ai_analysis("Gage R&R", context)
 
     with tab_bias:
         st.markdown("### 🎯 Bias")
@@ -1059,12 +1018,11 @@ def page_ai(metrics: dict) -> None:
     question = st.text_area("Pose ta question qualité", key="ai_question")
 
     if st.button("Analyser", key="ai_analyze_button"):
-
         if not question.strip():
             st.warning("Écris une question")
             return
 
-        prompt = f"""
+    prompt = f"""
 Tu es un expert qualité automobile.
 
 Données actuelles :
@@ -1086,11 +1044,11 @@ Donne :
 4. Actions correctives
 """
 
-        with st.spinner("🤖 Analyse en cours..."):
-            answer = ask_hf_ai(prompt)
+    with st.spinner("🤖 Analyse en cours..."):
+        answer = ask_hf_ai(prompt)
 
-        st.markdown("### 🧠 Réponse IA")
-        st.success(answer)
+    st.markdown("### 🧠 Réponse IA")
+    st.success(answer)
 
 def render_pdf_section(metrics: dict) -> None:
     st.markdown("---")
@@ -1147,7 +1105,7 @@ def render_header() -> None:
 def render_global_kpis(metrics: dict) -> None:
     st.markdown("### 📊 KPIs Globaux")
 
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4 = st.columns(4)
 
     total_rows = metrics.get("total", 0)
     msa_count = metrics.get("msa_count", 0)
@@ -1158,8 +1116,7 @@ def render_global_kpis(metrics: dict) -> None:
     col2.metric("MSA", msa_count)
     col3.metric("SPC", spc_count)
     col4.metric("Moyenne", f"{avg_value:.2f}")
-    ppm_value = metrics.get("ppm", 0)
-    col5.metric("PPM", f"{ppm_value:.0f}")
+
     st.markdown("<br>", unsafe_allow_html=True)
 # =========================
 # MAIN
