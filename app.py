@@ -572,47 +572,47 @@ def page_msa(df: pd.DataFrame, metrics: dict) -> None:
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
             return
+
+        mean_msa = float(msa_data["Measurement"].mean())
+        std_msa = safe_std(msa_data["Measurement"])
+        ref = (usl + lsl) / 2
+        tolerance = usl - lsl
+        cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
+        cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Référence", f"{ref:.4f}")
+        c2.metric("Tolérance", f"{tolerance:.4f}")
+        c3.metric("Cg", f"{cg:.2f}")
+        c4.metric("Cgk", f"{cgk:.2f}")
+
+        if cgk < 1:
+            st.error("❌ Système de mesure NON acceptable (Cgk < 1)")
+        elif cgk < 1.33:
+            st.warning("⚠ Système limite (amélioration recommandée)")
         else:
-            mean_msa = float(msa_data["Measurement"].mean())
-            std_msa = safe_std(msa_data["Measurement"])
-            ref = (usl + lsl) / 2
-            tolerance = usl - lsl
-            cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
-            cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
+            st.success("✅ Système de mesure acceptable")
 
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Référence", f"{ref:.4f}")
-            c2.metric("Tolérance", f"{tolerance:.4f}")
-            c3.metric("Cg", f"{cg:.2f}")
-            c4.metric("Cgk", f"{cgk:.2f}")
-
-            if cgk < 1:
-                st.error("❌ Système de mesure NON acceptable (Cgk < 1)")
-            elif cgk < 1.33:
-                st.warning("⚠️ Système limite (amélioration recommandée)")
-            else:
-                st.success("✅ Système de mesure acceptable")
-
-            st.markdown("""
+        st.markdown("""
 **Lecture rapide:**
 - Cg ≥ 1.33 → répétabilité correcte
 - Cgk ≥ 1.33 → système fiable
 - Cgk < 1 → système NON fiable
 """)
 
-            fig = go.Figure()
-            fig.add_trace(
-                go.Scatter(
-                    x=list(range(1, len(msa_data) + 1)),
-                    y=msa_data["Measurement"],
-                    mode="lines+markers",
-                    name="Mesures MSA",
-                )
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=list(range(1, len(msa_data) + 1)),
+                y=msa_data["Measurement"],
+                mode="lines+markers",
+                name="Mesures MSA",
             )
-            fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
-            fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
-            fig.update_layout(title="Carte MSA Type 1", template="plotly_dark", height=430)
-            plot_chart(fig, "msa_type1_chart")
+        )
+        fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
+        fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
+        fig.update_layout(title="Carte MSA Type 1", template="plotly_dark", height=430)
+        plot_chart(fig, "msa_type1_chart")
 
         context = f"""
 Référence = {ref:.4f}
@@ -626,106 +626,106 @@ Nombre de mesures MSA = {len(msa_data)}
         show_ai_analysis("MSA Type 1", context)
 
     with tab_grr:
-        st.markdown("### ⚙️ Gage R&R")
+        st.markdown("### ⚙ Gage R&R")
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
             return
-        else:
-            df_grr = msa_data.copy()
-            var_total = df_grr["Measurement"].var()
-            var_operator = df_grr.groupby("Operator")["Measurement"].mean().var()
-            var_repeat = df_grr.groupby(["Part_ID", "Operator"])["Measurement"].var().mean()
-            var_total = 0 if pd.isna(var_total) else var_total
-            var_operator = 0 if pd.isna(var_operator) else var_operator
-            var_repeat = 0 if pd.isna(var_repeat) else var_repeat
-            var_grr = var_operator + var_repeat
-            percent_grr = (var_grr / var_total) * 100 if var_total > 0 else 0
 
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Variation totale", f"{var_total:.8f}")
-            c2.metric("GRR", f"{var_grr:.8f}")
-            c3.metric("%GRR", f"{percent_grr:.2f}%")
+        df_grr = msa_data.copy()
+        var_total = df_grr["Measurement"].var()
+        var_operator = df_grr.groupby("Operator")["Measurement"].mean().var()
+        var_repeat = df_grr.groupby(["Part_ID", "Operator"])["Measurement"].var().mean()
+        var_total = 0 if pd.isna(var_total) else var_total
+        var_operator = 0 if pd.isna(var_operator) else var_operator
+        var_repeat = 0 if pd.isna(var_repeat) else var_repeat
+        var_grr = var_operator + var_repeat
+        percent_grr = (var_grr / var_total) * 100 if var_total > 0 else 0
 
-            fig = px.box(df_grr, x="Operator", y="Measurement", color="Operator", title="Variation par opérateur", template="plotly_dark")
-            plot_chart(fig, "msa_grr_box")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Variation totale", f"{var_total:.8f}")
+        c2.metric("GRR", f"{var_grr:.8f}")
+        c3.metric("%GRR", f"{percent_grr:.2f}%")
 
-            context = f"""
+        fig = px.box(df_grr, x="Operator", y="Measurement", color="Operator", title="Variation par opérateur", template="plotly_dark")
+        plot_chart(fig, "msa_grr_box")
+
+        context = f"""
 Variation totale = {var_total:.8f}
 Variation opérateur = {var_operator:.8f}
 Variation répétabilité = {var_repeat:.8f}
 GRR = {var_grr:.8f}
 %GRR = {percent_grr:.2f}
 """
-            show_ai_analysis("Gage R&R", context)
+        show_ai_analysis("Gage R&R", context)
 
     with tab_bias:
         st.markdown("### 🎯 Bias")
-       if msa_data.empty:
+        if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
             return
-        else:
-            reference = st.number_input("Valeur de référence", value=12.0000, format="%.4f", key="bias_reference")
-            mean_bias = float(msa_data["Measurement"].mean())
-            bias = mean_bias - reference
-            c1, c2 = st.columns(2)
-            c1.metric("Moyenne mesurée", f"{mean_bias:.6f}")
-            c2.metric("Bias", f"{bias:.6f}")
-            context = f"""
+
+        reference = st.number_input("Valeur de référence", value=12.0000, format="%.4f", key="bias_reference")
+        mean_bias = float(msa_data["Measurement"].mean())
+        bias = mean_bias - reference
+        c1, c2 = st.columns(2)
+        c1.metric("Moyenne mesurée", f"{mean_bias:.6f}")
+        c2.metric("Bias", f"{bias:.6f}")
+        context = f"""
 Référence = {reference:.4f}
 Moyenne mesurée = {mean_bias:.6f}
 Bias = {bias:.6f}
 """
-            show_ai_analysis("Bias", context)
+        show_ai_analysis("Bias", context)
 
     with tab_linearity:
         st.markdown("### 📈 Linearity")
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
             return
-        else:
-            df_lin = msa_data.copy()
-            df_lin["Reference"] = df_lin.groupby("Part_ID")["Measurement"].transform("mean")
-            df_lin["Bias"] = df_lin["Measurement"] - df_lin["Reference"]
-            fig = px.scatter(df_lin, x="Reference", y="Bias", color="Operator", title="Linearity : Bias vs Référence", template="plotly_dark")
-            plot_chart(fig, "msa_linearity_scatter")
-            bias_var = safe_std(df_lin.groupby("Part_ID")["Bias"].mean())
-            st.metric("Variation du Bias", f"{bias_var:.6f}")
-            context = f"""
+
+        df_lin = msa_data.copy()
+        df_lin["Reference"] = df_lin.groupby("Part_ID")["Measurement"].transform("mean")
+        df_lin["Bias"] = df_lin["Measurement"] - df_lin["Reference"]
+        fig = px.scatter(df_lin, x="Reference", y="Bias", color="Operator", title="Linearity : Bias vs Référence", template="plotly_dark")
+        plot_chart(fig, "msa_linearity_scatter")
+        bias_var = safe_std(df_lin.groupby("Part_ID")["Bias"].mean())
+        st.metric("Variation du Bias", f"{bias_var:.6f}")
+        context = f"""
 Variation du Bias = {bias_var:.6f}
 Nombre de pièces MSA = {df_lin['Part_ID'].nunique()}
 Nombre opérateurs = {df_lin['Operator'].nunique()}
 """
-            show_ai_analysis("Linearity", context)
+        show_ai_analysis("Linearity", context)
 
     with tab_stability:
         st.markdown("### ⏳ Stability")
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
             return
-        else:
-            df_stab = msa_data.copy()
-            df_stab["Date_Time"] = pd.to_datetime(df_stab["Date_Time"], errors="coerce")
-            df_stab = df_stab.dropna(subset=["Date_Time"]).sort_values("Date_Time")
-            mean_stab = float(df_stab["Measurement"].mean())
-            std_stab = safe_std(df_stab["Measurement"])
-            ucl_stab = mean_stab + 3 * std_stab
-            lcl_stab = mean_stab - 3 * std_stab
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=df_stab["Date_Time"], y=df_stab["Measurement"], mode="lines+markers", name="Mesures"))
-            fig.add_hline(y=mean_stab, line_dash="dash", annotation_text="Moyenne")
-            fig.add_hline(y=ucl_stab, line_dash="dot", annotation_text="UCL")
-            fig.add_hline(y=lcl_stab, line_dash="dot", annotation_text="LCL")
-            fig.update_layout(title="Stability dans le temps", template="plotly_dark", height=430)
-            plot_chart(fig, "msa_stability_chart")
-            out_stab = df_stab[(df_stab["Measurement"] > ucl_stab) | (df_stab["Measurement"] < lcl_stab)]
-            context = f"""
+
+        df_stab = msa_data.copy()
+        df_stab["Date_Time"] = pd.to_datetime(df_stab["Date_Time"], errors="coerce")
+        df_stab = df_stab.dropna(subset=["Date_Time"]).sort_values("Date_Time")
+        mean_stab = float(df_stab["Measurement"].mean())
+        std_stab = safe_std(df_stab["Measurement"])
+        ucl_stab = mean_stab + 3 * std_stab
+        lcl_stab = mean_stab - 3 * std_stab
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_stab["Date_Time"], y=df_stab["Measurement"], mode="lines+markers", name="Mesures"))
+        fig.add_hline(y=mean_stab, line_dash="dash", annotation_text="Moyenne")
+        fig.add_hline(y=ucl_stab, line_dash="dot", annotation_text="UCL")
+        fig.add_hline(y=lcl_stab, line_dash="dot", annotation_text="LCL")
+        fig.update_layout(title="Stability dans le temps", template="plotly_dark", height=430)
+        plot_chart(fig, "msa_stability_chart")
+        out_stab = df_stab[(df_stab["Measurement"] > ucl_stab) | (df_stab["Measurement"] < lcl_stab)]
+        context = f"""
 Moyenne stabilité = {mean_stab:.4f}
 Écart-type stabilité = {std_stab:.6f}
 UCL = {ucl_stab:.4f}
 LCL = {lcl_stab:.4f}
 Points instables = {len(out_stab)}
 """
-            show_ai_analysis("Stability", context)
+        show_ai_analysis("Stability", context)
 
     with tab_attribute:
         st.markdown("### ✅ Attribute MSA")
