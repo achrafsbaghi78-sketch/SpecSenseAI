@@ -571,6 +571,7 @@ def page_msa(df: pd.DataFrame, metrics: dict) -> None:
 
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
+            return
         else:
             mean_msa = float(msa_data["Measurement"].mean())
             std_msa = safe_std(msa_data["Measurement"])
@@ -628,6 +629,7 @@ Nombre de mesures MSA = {len(msa_data)}
         st.markdown("### ⚙️ Gage R&R")
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
+            return
         else:
             df_grr = msa_data.copy()
             var_total = df_grr["Measurement"].var()
@@ -658,8 +660,9 @@ GRR = {var_grr:.8f}
 
     with tab_bias:
         st.markdown("### 🎯 Bias")
-        if msa_data.empty:
+       if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
+            return
         else:
             reference = st.number_input("Valeur de référence", value=12.0000, format="%.4f", key="bias_reference")
             mean_bias = float(msa_data["Measurement"].mean())
@@ -678,6 +681,7 @@ Bias = {bias:.6f}
         st.markdown("### 📈 Linearity")
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
+            return
         else:
             df_lin = msa_data.copy()
             df_lin["Reference"] = df_lin.groupby("Part_ID")["Measurement"].transform("mean")
@@ -697,6 +701,7 @@ Nombre opérateurs = {df_lin['Operator'].nunique()}
         st.markdown("### ⏳ Stability")
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
+            return
         else:
             df_stab = msa_data.copy()
             df_stab["Date_Time"] = pd.to_datetime(df_stab["Date_Time"], errors="coerce")
