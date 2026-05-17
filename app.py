@@ -432,9 +432,11 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
     if submitted:
         part_id_final = f"{data_type}_{part_id}"
 
+       now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         new_rows = pd.DataFrame([
             {
-               "Date_Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+               "Date_Time": now_str,
                 "Part_ID": part_id_final,
                 "Operator": operator,
                 "Trial": 1,
@@ -448,7 +450,7 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
                 "Detection": 1,
             },
             {
-                "Date_Time": datetime.now(),
+                "Date_Time": now_str,
                 "Part_ID": part_id_final,
                 "Operator": operator,
                 "Trial": 2,
@@ -462,7 +464,7 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
                 "Detection": 1,
             },
             {
-                "Date_Time": datetime.now(),
+                "Date_Time": now_str,
                 "Part_ID": part_id_final,
                 "Operator": operator,
                 "Trial": 3,
@@ -476,7 +478,6 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
                 "Detection": 1,
             },
         ])
-
         for _, row in new_rows.iterrows():
             save_to_google_sheet(row.to_dict())
 
