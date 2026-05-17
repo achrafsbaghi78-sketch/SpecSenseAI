@@ -287,6 +287,8 @@ def save_to_google_sheet(row: dict) -> None:
 
         if response.status_code == 200:
             st.success("✅ Sauvegardé dans Google Sheet")
+            st.cache_data.clear()
+            st.rerun()
         else:
             st.error(f"❌ Erreur Google Sheet: {response.text}")
 
