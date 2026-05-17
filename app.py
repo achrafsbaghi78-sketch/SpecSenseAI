@@ -177,16 +177,24 @@ def clean_page_name(page: str) -> str:
 # =========================
 def ask_hf_ai(question: str) -> str:
     if "HUGGINGFACE_TOKEN" not in st.secrets:
-        return "❌ HUGGINGFACE_TOKEN manquant dans Streamlit Secrets."
+        return """⚠ **IA désactivée - Mode démo**
+
+Pour activer l'IA:
+1. Génère un token: https://huggingface.co/settings/tokens > New token > Type `Read`
+2. Streamlit Cloud > Settings > Secrets > Ajoute: `HUGGINGFACE_TOKEN = "hf_..."`
+3. Redéploie l'app"""
 
     try:
-        client = InferenceClient(token=st.secrets["HUGGINGFACE_TOKEN"])
+        client = InferenceClient(
+            token=st.secrets["HUGGINGFACE_TOKEN"],
+            timeout=30
+        )
         response = client.chat.completions.create(
             model="Qwen/Qwen2.5-7B-Instruct",
             messages=[
                 {
                     "role": "system",
-                    "content": "Tu es un expert qualité automobile. Réponds en français simple, professionnel et avec des actions concrètes.",
+                    "content": "Tu es un expert qualité automobile IATF 16949. Réponds en français. Structure obligatoire: 1.INTERPRÉTATION 2.CAUSES 3.ACTIONS IMMÉDIATES 4.ACTIONS CORRECTIVES",
                 },
                 {"role": "user", "content": question},
             ],
@@ -195,6 +203,19 @@ def ask_hf_ai(question: str) -> str:
         )
         return response.choices[0].message.content
     except Exception as exc:
+        err = str(exc)
+        if "401" in err:
+            return """❌ **Token HF invalide ou expiré**
+
+1. Sir https://huggingface.co/settings/tokens
+2. Supprime l'ancien token
+3. `New token` > Type `Read` > Generate
+4. Copy `hf_...` f Streamlit Secrets
+5. Redéploie"""
+        if "429" in err:
+            return "⚠ **Rate limit HF**: Trop de requêtes. Tsnna 1 min w 3awd."
+        if "timeout" in err.lower():
+            return "⚠ **Timeout**: Serveur HF t3ettel. Click 'Analyser' mra khra."
         return f"❌ Erreur IA : {exc}"
 
 
