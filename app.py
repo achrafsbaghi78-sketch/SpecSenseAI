@@ -1045,40 +1045,43 @@ Action actuelle = {top_risk['Action']}
 
 def page_ai(metrics: dict) -> None:
     st.subheader("🤖 Assistant Qualité IA")
-    question = st.text_area("Pose ta question qualité", key="ai_question")
+    question = st.text_area("Pose ta question qualité", key="ai_question", placeholder="Ex: Pourquoi Cpk faible? Quelles actions?")
 
     if st.button("Analyser", key="ai_analyze_button"):
         if not question.strip():
             st.warning("Écris une question")
             return
 
-    prompt = f"""
-Tu es un expert qualité automobile.
+        prompt = f"""
+Tu es un expert qualité automobile IATF 16949.
 
 Données actuelles :
 - Moyenne = {metrics['mean_val']:.4f}
 - Écart-type = {metrics['std_val']:.6f}
 - Cp = {metrics['cp']:.2f}
 - Cpk = {metrics['cpk']:.2f}
-- USL = {metrics['usl']}
-- LSL = {metrics['lsl']}
+- USL = {metrics['usl']:.4f}
+- LSL = {metrics['lsl']:.4f}
 - Nombre de mesures = {metrics['total']}
 
-Question :
+Question utilisateur :
 {question}
 
-Donne :
-1. Interprétation
-2. Causes possibles
-3. Actions immédiates
-4. Actions correctives
+Donne une réponse structurée en 4 parties:
+1. INTERPRÉTATION
+2. CAUSES POSSIBLES  
+3. ACTIONS IMMÉDIATES
+4. ACTIONS CORRECTIVES
 """
 
-    with st.spinner("🤖 Analyse en cours..."):
-        answer = ask_hf_ai(prompt)
+        with st.spinner("🤖 Analyse en cours..."):
+            answer = ask_hf_ai(prompt)
 
-    st.markdown("### 🧠 Réponse IA")
-    st.success(answer)
+        st.markdown("### 🧠 Réponse IA")
+        if answer.startswith("❌") or answer.startswith("⚠"):
+            st.error(answer)
+        else:
+            st.success(answer)
 
 def render_pdf_section(metrics: dict) -> None:
     st.markdown("---")
