@@ -418,25 +418,25 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
             part_id = st.text_input("Référence / Part ID")
             operator = st.text_input("Opérateur")
 
-        with col1:
+        with col2:
             machine = st.text_input("Machine", value="M1")
             usl = st.number_input("USL", value=12.1000, format="%.4f")
             lsl = st.number_input("LSL", value=11.9000, format="%.4f")
 
-        with col1:
+        with col3:
             mesure_1 = st.number_input("Mesure 1", format="%.4f")
             mesure_2 = st.number_input("Mesure 2", format="%.4f")
             mesure_3 = st.number_input("Mesure 3", format="%.4f")
 
         submitted = st.form_submit_button("Enregistrer")
+
     if submitted:
         part_id_final = f"{data_type}_{part_id}"
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    new_rows = pd.DataFrame([
+        new_rows = pd.DataFrame([
             {
-               "Date_Time": now_str,
+                "Date_Time": now_str,
                 "Part_ID": part_id_final,
                 "Operator": operator,
                 "Trial": 1,
@@ -478,7 +478,8 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
                 "Detection": 1,
             },
         ])
-    for _, row in new_rows.iterrows():
+
+        for _, row in new_rows.iterrows():
             save_to_google_sheet(row.to_dict())
 
         st.session_state["manual_data"] = pd.concat(
