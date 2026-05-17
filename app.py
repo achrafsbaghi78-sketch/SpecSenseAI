@@ -478,7 +478,7 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
                 "Detection": 1,
             },
         ])
-        for _, row in new_rows.iterrows():
+            for _, row in new_rows.iterrows():
             save_to_google_sheet(row.to_dict())
 
         st.session_state["manual_data"] = pd.concat(
