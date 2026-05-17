@@ -434,7 +434,7 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        new_rows = pd.DataFrame([
+    new_rows = pd.DataFrame([
             {
                "Date_Time": now_str,
                 "Part_ID": part_id_final,
