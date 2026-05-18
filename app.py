@@ -416,15 +416,15 @@ def generate_rapport_general_iatf(metrics: dict, df: pd.DataFrame) -> str:
     # PAGE 2: SOMMAIRE EXÉCUTIF
     story.append(Paragraph("1. SOMMAIRE EXÉCUTIF", h2_style))
     cpk = metrics['cpk']
-    if cpk >= 1.33:
+   if cpk >= 1.33:
         statut_proc = "CONFORME - Processus capable"
-        couleur_proc = colors.green
+        couleur_proc = "green"
     elif cpk >= 1.00:
         statut_proc = "LIMITE - Amélioration requise"
-        couleur_proc = colors.orange
+        couleur_proc = "orange"
     else:
         statut_proc = "NON CONFORME - Actions immédiates"
-        couleur_proc = colors.red
+        couleur_proc = "red"
 
     synthese_data = [
         ["Indicateur", "Valeur", "Exigence IATF", "Statut"],
@@ -447,7 +447,7 @@ def generate_rapport_general_iatf(metrics: dict, df: pd.DataFrame) -> str:
     ]))
     story.append(t1)
     story.append(Spacer(1, 12))
-    story.append(Paragraph(f"<b>Conclusion:</b> <font color='{couleur_proc.hexval()}'>{statut_proc}</font>", styles['Normal']))
+    story.append(Paragraph(f"<b>Conclusion:</b> <font color='{couleur_proc}'>{statut_proc}</font>", styles['Normal']))
     story.append(PageBreak())
 
     # PAGE 3: MSA
