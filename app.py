@@ -450,7 +450,7 @@ def generate_rapport_general_iatf(metrics: dict, df: pd.DataFrame) -> str:
     story.append(Paragraph(f"<b>Conclusion:</b> <font color='{couleur_proc}'>{statut_proc}</font>", styles['Normal']))
     story.append(PageBreak())
 
-    # PAGE 3: MSA
+   # PAGE 3: MSA
     story.append(Paragraph("2. VALIDATION MSA - IATF §7.1.5", h2_style))
     msa_data = metrics['msa_data']
     if not msa_data.empty:
@@ -461,7 +461,7 @@ def generate_rapport_general_iatf(metrics: dict, df: pd.DataFrame) -> str:
         cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
         cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
         statut_msa = "ACCEPTABLE" if cgk >= 1.33 else "REFUSÉ"
-        couleur_msa = colors.green if cgk >= 1.33 else colors.red
+        couleur_msa = "green" if cgk >= 1.33 else "red"  # <-- BEDDEL HADI
 
         msa_table = [
             ["Critère MSA Type 1", "Valeur", "Exigence", "Statut"],
@@ -478,7 +478,7 @@ def generate_rapport_general_iatf(metrics: dict, df: pd.DataFrame) -> str:
         ]))
         story.append(t2)
         story.append(Spacer(1, 10))
-        story.append(Paragraph(f"<b>Verdict MSA:</b> <font color='{couleur_msa.hexval()}'>{statut_msa}</font>", styles['Normal']))
+        story.append(Paragraph(f"<b>Verdict MSA:</b> <font color='{couleur_msa}'>{statut_msa}</font>", styles['Normal']))  # <-- BEDDEL HADI
     else:
         story.append(Paragraph("⚠ Aucune donnée MSA. Ajouter mesures avec Part_ID='MSA_*'", styles['Normal']))
     story.append(PageBreak())
