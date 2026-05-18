@@ -1311,7 +1311,7 @@ def main() -> None:
     elif page == "IA":
         page_ai(metrics)
 
-   elif page == "Rapport IATF":
+    elif page == "Rapport IATF":
         st.subheader("📄 Rapport Qualité IATF 16949:2016")
         st.markdown("Génère un rapport PDF complet avec MSA, SPC, Capabilité et Plan d'actions")
         
