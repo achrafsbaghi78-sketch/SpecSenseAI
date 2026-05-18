@@ -686,7 +686,7 @@ def prepare_data(df: pd.DataFrame) -> dict:
 
 
 # =========================
-# PDF
+# PDF - DESIGN NQI W WADIH
 # =========================
 def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
     from reportlab.lib.pagesizes import A4
@@ -699,68 +699,75 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
         HRFlowable, PageBreak, Image
     )
     from reportlab.pdfgen import canvas
-    from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate
     import io
 
-    # ─── COULEURS ───────────────────────────────────────────────
-    BLEU_FONCE   = colors.HexColor("#020917")
-    BLEU_MED     = colors.HexColor("#0f172a")
-    BLEU_ACCENT  = colors.HexColor("#0ea5e9")
-    BLEU_LIGHT   = colors.HexColor("#38bdf8")
-    INDIGO       = colors.HexColor("#6366f1")
-    GRIS_TEXTE   = colors.HexColor("#e2e8f0")
-    GRIS_MED     = colors.HexColor("#94a3b8")
-    GRIS_DIM     = colors.HexColor("#475569")
-    VERT         = colors.HexColor("#22c55e")
-    ORANGE       = colors.HexColor("#f59e0b")
-    ROUGE        = colors.HexColor("#ef4444")
-    BLANC        = colors.white
-    NOIR         = colors.HexColor("#020917")
+    # ─── COULEURS CLASSIQUES (BOOTSTRAP STYLE) ──────────────────
+    BLANC       = colors.white
+    NOIR        = colors.HexColor("#212529")
+    GRIS_FONCE  = colors.HexColor("#343a40")
+    GRIS_MED    = colors.HexColor("#6c757d")
+    GRIS_CLAIR  = colors.HexColor("#adb5bd")
+    GRIS_TRES   = colors.HexColor("#dee2e6")
+    GRIS_BG     = colors.HexColor("#f8f9fa")
+    BLEU        = colors.HexColor("#0d6efd")
+    BLEU_CLAIR  = colors.HexColor("#6ea8fe")
+    BLEU_BG     = colors.HexColor("#cfe2ff")
+    VERT        = colors.HexColor("#198754")
+    VERT_CLAIR  = colors.HexColor("#75b798")
+    VERT_BG     = colors.HexColor("#d1e7dd")
+    ORANGE      = colors.HexColor("#ffc107")
+    ORANGE_CLAIR= colors.HexColor("#ffda6a")
+    ORANGE_BG   = colors.HexColor("#fff3cd")
+    ROUGE       = colors.HexColor("#dc3545")
+    ROUGE_CLAIR = colors.HexColor("#ea868f")
+    ROUGE_BG    = colors.HexColor("#f8d7da")
+    JAUNE       = colors.HexColor("#ffc107")
+    CYAN        = colors.HexColor("#0dcaf0")
 
     PAGE_W, PAGE_H = A4
 
-    # ─── HEADER / FOOTER sur chaque page ────────────────────────
+    # ─── HEADER / FOOTER ────────────────────────────────────────
     def header_footer(canvas_obj, doc):
         canvas_obj.saveState()
 
-        # Header background
-        canvas_obj.setFillColor(BLEU_MED)
-        canvas_obj.rect(0, PAGE_H - 2.2*cm, PAGE_W, 2.2*cm, fill=1, stroke=0)
+        # Header background - GRIS FONCE
+        canvas_obj.setFillColor(GRIS_FONCE)
+        canvas_obj.rect(0, PAGE_H - 2.0*cm, PAGE_W, 2.0*cm, fill=1, stroke=0)
 
-        # Ligne accent header
-        canvas_obj.setFillColor(BLEU_ACCENT)
-        canvas_obj.rect(0, PAGE_H - 2.2*cm, PAGE_W, 0.12*cm, fill=1, stroke=0)
+        # Ligne accent header - BLEU
+        canvas_obj.setFillColor(BLEU)
+        canvas_obj.rect(0, PAGE_H - 2.0*cm, PAGE_W, 0.15*cm, fill=1, stroke=0)
 
         # Logo / Nom app
         canvas_obj.setFillColor(BLANC)
-        canvas_obj.setFont("Helvetica-Bold", 13)
-        canvas_obj.drawString(1.5*cm, PAGE_H - 1.5*cm, "SpecSense AI")
-        canvas_obj.setFillColor(GRIS_MED)
+        canvas_obj.setFont("Helvetica-Bold", 14)
+        canvas_obj.drawString(1.5*cm, PAGE_H - 1.4*cm, "SpecSense AI")
+        canvas_obj.setFillColor(GRIS_CLAIR)
         canvas_obj.setFont("Helvetica", 9)
-        canvas_obj.drawString(1.5*cm, PAGE_H - 1.9*cm, "Plateforme intelligente de qualite industrielle")
+        canvas_obj.drawString(1.5*cm, PAGE_H - 1.8*cm, "Plateforme intelligente de qualite industrielle")
 
         # Date header droite
-        canvas_obj.setFillColor(GRIS_MED)
+        canvas_obj.setFillColor(GRIS_CLAIR)
         canvas_obj.setFont("Helvetica", 9)
         date_str = datetime.now().strftime("%d/%m/%Y  %H:%M")
-        canvas_obj.drawRightString(PAGE_W - 1.5*cm, PAGE_H - 1.5*cm, date_str)
-        canvas_obj.setFillColor(GRIS_DIM)
+        canvas_obj.drawRightString(PAGE_W - 1.5*cm, PAGE_H - 1.4*cm, date_str)
+        canvas_obj.setFillColor(GRIS_MED)
         canvas_obj.setFont("Helvetica", 8)
-        canvas_obj.drawRightString(PAGE_W - 1.5*cm, PAGE_H - 1.9*cm, "IATF 16949 | Qualite 4.0")
+        canvas_obj.drawRightString(PAGE_W - 1.5*cm, PAGE_H - 1.8*cm, "IATF 16949 | Qualite 4.0")
 
-        # Footer background
-        canvas_obj.setFillColor(BLEU_MED)
-        canvas_obj.rect(0, 0, PAGE_W, 1.2*cm, fill=1, stroke=0)
+        # Footer background - GRIS FONCE
+        canvas_obj.setFillColor(GRIS_FONCE)
+        canvas_obj.rect(0, 0, PAGE_W, 1.0*cm, fill=1, stroke=0)
 
-        # Ligne accent footer
-        canvas_obj.setFillColor(INDIGO)
-        canvas_obj.rect(0, 1.2*cm, PAGE_W, 0.08*cm, fill=1, stroke=0)
+        # Ligne accent footer - BLEU
+        canvas_obj.setFillColor(BLEU)
+        canvas_obj.rect(0, 1.0*cm, PAGE_W, 0.08*cm, fill=1, stroke=0)
 
         # Texte footer
-        canvas_obj.setFillColor(GRIS_DIM)
+        canvas_obj.setFillColor(GRIS_CLAIR)
         canvas_obj.setFont("Helvetica", 8)
-        canvas_obj.drawString(1.5*cm, 0.4*cm, "CONFIDENTIEL — Document qualite interne")
-        canvas_obj.drawRightString(PAGE_W - 1.5*cm, 0.4*cm, f"Page {doc.page}")
+        canvas_obj.drawString(1.5*cm, 0.35*cm, "CONFIDENTIEL — Document qualite interne")
+        canvas_obj.drawRightString(PAGE_W - 1.5*cm, 0.35*cm, f"Page {doc.page}")
 
         canvas_obj.restoreState()
 
@@ -771,16 +778,16 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
         s["titre_principal"] = ParagraphStyle(
             "titre_principal",
             fontName="Helvetica-Bold",
-            fontSize=26,
-            textColor=BLANC,
+            fontSize=24,
+            textColor=NOIR,
             alignment=TA_CENTER,
             spaceAfter=6,
-            leading=30,
+            leading=28,
         )
         s["sous_titre"] = ParagraphStyle(
             "sous_titre",
             fontName="Helvetica",
-            fontSize=13,
+            fontSize=12,
             textColor=GRIS_MED,
             alignment=TA_CENTER,
             spaceAfter=4,
@@ -788,67 +795,67 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
         s["section_title"] = ParagraphStyle(
             "section_title",
             fontName="Helvetica-Bold",
-            fontSize=14,
-            textColor=BLEU_LIGHT,
-            spaceBefore=14,
-            spaceAfter=8,
-            leading=18,
+            fontSize=13,
+            textColor=BLEU,
+            spaceBefore=12,
+            spaceAfter=6,
+            leading=16,
         )
         s["body"] = ParagraphStyle(
             "body",
             fontName="Helvetica",
-            fontSize=10,
-            textColor=GRIS_TEXTE,
-            spaceAfter=4,
-            leading=15,
+            fontSize=9,
+            textColor=NOIR,
+            spaceAfter=3,
+            leading=13,
         )
         s["body_bold"] = ParagraphStyle(
             "body_bold",
             fontName="Helvetica-Bold",
-            fontSize=10,
-            textColor=BLANC,
-            spaceAfter=4,
-            leading=15,
+            fontSize=9,
+            textColor=NOIR,
+            spaceAfter=3,
+            leading=13,
         )
         s["small"] = ParagraphStyle(
             "small",
             fontName="Helvetica",
             fontSize=8,
-            textColor=GRIS_DIM,
+            textColor=GRIS_MED,
             spaceAfter=2,
         )
         s["conclusion"] = ParagraphStyle(
             "conclusion",
             fontName="Helvetica-Bold",
-            fontSize=11,
-            textColor=BLANC,
-            spaceAfter=6,
-            leading=16,
+            fontSize=10,
+            textColor=NOIR,
+            spaceAfter=4,
+            leading=14,
         )
         s["label_centre"] = ParagraphStyle(
             "label_centre",
             fontName="Helvetica-Bold",
-            fontSize=9,
+            fontSize=8,
             textColor=GRIS_MED,
             alignment=TA_CENTER,
         )
         s["valeur_centre"] = ParagraphStyle(
             "valeur_centre",
             fontName="Helvetica-Bold",
-            fontSize=18,
-            textColor=BLANC,
+            fontSize=16,
+            textColor=NOIR,
             alignment=TA_CENTER,
-            leading=22,
+            leading=20,
         )
         return s
 
     ST = make_styles()
 
     # ─── HELPERS ────────────────────────────────────────────────
-    def hr(color=BLEU_ACCENT, thickness=0.5):
+    def hr(color=BLEU, thickness=0.5):
         return HRFlowable(
             width="100%", thickness=thickness,
-            color=color, spaceAfter=8, spaceBefore=4
+            color=color, spaceAfter=6, spaceBefore=3
         )
 
     def section_header(titre):
@@ -857,20 +864,20 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
             hr(),
         ]
 
-    def kpi_box(label, valeur, couleur=BLEU_LIGHT):
+    def kpi_box(label, valeur, couleur=BLEU):
         data = [
             [Paragraph(label, ST["label_centre"])],
             [Paragraph(str(valeur), ST["valeur_centre"])],
         ]
         t = Table(data, colWidths=[3.8*cm])
         t.setStyle(TableStyle([
-            ("BACKGROUND",    (0,0), (-1,-1), BLEU_MED),
-            ("ROUNDEDCORNERS",(0,0), (-1,-1), [8]),
-            ("BOX",           (0,0), (-1,-1), 0.8, couleur),
-            ("TOPPADDING",    (0,0), (-1,-1), 8),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 8),
-            ("LEFTPADDING",   (0,0), (-1,-1), 6),
-            ("RIGHTPADDING",  (0,0), (-1,-1), 6),
+            ("BACKGROUND",    (0,0), (-1,-1), BLANC),
+            ("ROUNDEDCORNERS",(0,0), (-1,-1), [6]),
+            ("BOX",           (0,0), (-1,-1), 1.5, couleur),
+            ("TOPPADDING",    (0,0), (-1,-1), 6),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+            ("LEFTPADDING",   (0,0), (-1,-1), 4),
+            ("RIGHTPADDING",  (0,0), (-1,-1), 4),
         ]))
         return t
 
@@ -882,6 +889,17 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
         else:
             return ROUGE, "NON CAPABLE"
 
+    def statut_cell_color(val):
+        if val == "OK":   
+            return VERT
+        if val == "NOK":  
+            return ROUGE
+        if val == "Attention": 
+            return ORANGE
+        if val == "Insuffisant":
+            return ORANGE
+        return GRIS_MED
+
     # ─── DOCUMENT SETUP ─────────────────────────────────────────
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -889,8 +907,8 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
         pagesize=A4,
         leftMargin=1.5*cm,
         rightMargin=1.5*cm,
-        topMargin=2.8*cm,
-        bottomMargin=1.8*cm,
+        topMargin=2.6*cm,
+        bottomMargin=1.6*cm,
     )
 
     story = []
@@ -907,29 +925,29 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
     # PAGE 1 — PAGE DE GARDE
     # ════════════════════════════════════════════════════════════
 
-    story.append(Spacer(1, 1.5*cm))
+    story.append(Spacer(1, 1.2*cm))
 
-    # Bloc titre principal
+    # Bloc titre principal - Background gris clair, border bleu
     title_data = [[
         Paragraph("RAPPORT QUALITE", ST["titre_principal"]),
     ]]
     title_table = Table(title_data, colWidths=[17*cm])
     title_table.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0), (-1,-1), BLEU_MED),
-        ("BOX",           (0,0), (-1,-1), 1.5, BLEU_ACCENT),
-        ("TOPPADDING",    (0,0), (-1,-1), 18),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 18),
-        ("LEFTPADDING",   (0,0), (-1,-1), 20),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 20),
+        ("BACKGROUND",    (0,0), (-1,-1), GRIS_BG),
+        ("BOX",           (0,0), (-1,-1), 2, BLEU),
+        ("TOPPADDING",    (0,0), (-1,-1), 14),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 14),
+        ("LEFTPADDING",   (0,0), (-1,-1), 16),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 16),
     ]))
     story.append(title_table)
     story.append(Spacer(1, 0.3*cm))
     story.append(Paragraph("Analyse de capabilite processus", ST["sous_titre"]))
-    story.append(Spacer(1, 0.8*cm))
-    story.append(hr(INDIGO, 1.5))
-    story.append(Spacer(1, 0.5*cm))
+    story.append(Spacer(1, 0.6*cm))
+    story.append(hr(BLEU, 1.5))
+    story.append(Spacer(1, 0.4*cm))
 
-    # Infos rapport
+    # Infos rapport - Table classique zebra striping
     info_data = [
         ["Date de generation :", datetime.now().strftime("%d %B %Y — %H:%M")],
         ["Reference document :", f"QR-{datetime.now().strftime('%Y%m%d-%H%M')}"],
@@ -941,38 +959,38 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
     info_table.setStyle(TableStyle([
         ("FONTNAME",      (0,0), (0,-1), "Helvetica-Bold"),
         ("FONTNAME",      (1,0), (1,-1), "Helvetica"),
-        ("FONTSIZE",      (0,0), (-1,-1), 10),
+        ("FONTSIZE",      (0,0), (-1,-1), 9),
         ("TEXTCOLOR",     (0,0), (0,-1), GRIS_MED),
-        ("TEXTCOLOR",     (1,0), (1,-1), BLANC),
-        ("ROWBACKGROUNDS",(0,0), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
-        ("TOPPADDING",    (0,0), (-1,-1), 8),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
-        ("LEFTPADDING",   (0,0), (-1,-1), 12),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 12),
-        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
-        ("LINEBELOW",     (0,0), (-1,-2), 0.3, colors.HexColor("#1e293b")),
+        ("TEXTCOLOR",     (1,0), (1,-1), NOIR),
+        ("ROWBACKGROUNDS",(0,0), (-1,-1), [BLANC, GRIS_BG]),
+        ("TOPPADDING",    (0,0), (-1,-1), 6),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+        ("LEFTPADDING",   (0,0), (-1,-1), 10),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_TRES),
+        ("LINEBELOW",     (0,0), (-1,-2), 0.3, GRIS_TRES),
     ]))
     story.append(info_table)
-    story.append(Spacer(1, 0.8*cm))
+    story.append(Spacer(1, 0.6*cm))
 
-    # Statut global — badge grand
+    # Statut global — badge grand avec couleur
     statut_data = [[
         Paragraph("STATUT GLOBAL DU PROCESSUS", ST["label_centre"]),
         Paragraph(f"● {texte_statut}", ParagraphStyle(
             "statut_badge",
             fontName="Helvetica-Bold",
-            fontSize=20,
+            fontSize=18,
             textColor=couleur_statut,
             alignment=TA_CENTER,
         )),
     ]]
     statut_table = Table(statut_data, colWidths=[6*cm, 11*cm])
     statut_table.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0), (-1,-1), BLEU_MED),
+        ("BACKGROUND",    (0,0), (-1,-1), BLANC),
         ("BOX",           (0,0), (-1,-1), 2, couleur_statut),
-        ("TOPPADDING",    (0,0), (-1,-1), 14),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 14),
-        ("LEFTPADDING",   (0,0), (-1,-1), 16),
+        ("TOPPADDING",    (0,0), (-1,-1), 10),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+        ("LEFTPADDING",   (0,0), (-1,-1), 12),
         ("VALIGN",        (0,0), (-1,-1), "MIDDLE"),
     ]))
     story.append(statut_table)
@@ -984,12 +1002,12 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
 
     story += section_header("1. RESUME EXECUTIF")
 
-    # KPIs en ligne
+    # KPIs en ligne - Boxes avec border coloré
     kpis_row = [
-        kpi_box("Cp",         f"{cp:.2f}",       BLEU_ACCENT if cp >= 1.33 else ORANGE if cp >= 1 else ROUGE),
+        kpi_box("Cp",         f"{cp:.2f}",       BLEU if cp >= 1.33 else ORANGE if cp >= 1 else ROUGE),
         kpi_box("Cpk",        f"{cpk:.2f}",       VERT if cpk >= 1.33 else ORANGE if cpk >= 1 else ROUGE),
-        kpi_box("Moyenne",    f"{mean_val:.4f}",  BLEU_LIGHT),
-        kpi_box("Ecart-type", f"{std_val:.5f}",   INDIGO),
+        kpi_box("Moyenne",    f"{mean_val:.4f}",  BLEU),
+        kpi_box("Ecart-type", f"{std_val:.5f}",   GRIS_MED),
     ]
     kpi_table = Table([kpis_row], colWidths=[4.0*cm]*4, hAlign="LEFT")
     kpi_table.setStyle(TableStyle([
@@ -998,7 +1016,7 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
         ("VALIGN",       (0,0), (-1,-1), "TOP"),
     ]))
     story.append(kpi_table)
-    story.append(Spacer(1, 0.5*cm))
+    story.append(Spacer(1, 0.4*cm))
 
     # Interpretation automatique
     story += section_header("2. CAPABILITE PROCESSUS")
@@ -1016,32 +1034,26 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
         ["Nb mesures",        str(total),             ">= 30",         "OK" if total >= 30 else "Insuffisant"],
     ]
 
-    def statut_cell_color(val):
-        if val == "OK":   return VERT
-        if val == "NOK":  return ROUGE
-        if val == "Attention": return ORANGE
-        return GRIS_MED
-
     cap_table = Table(cap_data, colWidths=[4.5*cm, 4*cm, 4.5*cm, 4*cm])
     cap_style = [
-        # Header
-        ("BACKGROUND",    (0,0), (-1,0), BLEU_ACCENT),
+        # Header - BLEU avec text BLANC
+        ("BACKGROUND",    (0,0), (-1,0), BLEU),
         ("TEXTCOLOR",     (0,0), (-1,0), BLANC),
         ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE",      (0,0), (-1,0), 10),
+        ("FONTSIZE",      (0,0), (-1,0), 9),
         ("ALIGN",         (0,0), (-1,0), "CENTER"),
         # Body
         ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
-        ("FONTSIZE",      (0,1), (-1,-1), 9),
+        ("FONTSIZE",      (0,1), (-1,-1), 8),
         ("TEXTCOLOR",     (0,1), (0,-1), GRIS_MED),
-        ("TEXTCOLOR",     (1,1), (2,-1), BLANC),
-        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
-        ("TOPPADDING",    (0,0), (-1,-1), 7),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 7),
-        ("LEFTPADDING",   (0,0), (-1,-1), 10),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
-        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
-        ("LINEBELOW",     (0,0), (-1,-2), 0.3, colors.HexColor("#1e293b")),
+        ("TEXTCOLOR",     (1,1), (2,-1), NOIR),
+        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLANC, GRIS_BG]),
+        ("TOPPADDING",    (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+        ("LEFTPADDING",   (0,0), (-1,-1), 8),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 8),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_TRES),
+        ("LINEBELOW",     (0,0), (-1,-2), 0.3, GRIS_TRES),
         ("ALIGN",         (1,1), (-1,-1), "CENTER"),
     ]
     # Colorier colonne statut
@@ -1052,7 +1064,7 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
 
     cap_table.setStyle(TableStyle(cap_style))
     story.append(cap_table)
-    story.append(Spacer(1, 0.5*cm))
+    story.append(Spacer(1, 0.4*cm))
 
     # ════════════════════════════════════════════════════════════
     # PAGE 3 — MSA + SPC
@@ -1087,21 +1099,23 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
 
     msa_t = Table(msa_table_data, colWidths=[4.5*cm, 4*cm, 4.5*cm, 4*cm])
     msa_style = [
-        ("BACKGROUND",    (0,0), (-1,0), INDIGO),
+        # Header - GRIS FONCE
+        ("BACKGROUND",    (0,0), (-1,0), GRIS_MED),
         ("TEXTCOLOR",     (0,0), (-1,0), BLANC),
         ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE",      (0,0), (-1,0), 10),
+        ("FONTSIZE",      (0,0), (-1,0), 9),
         ("ALIGN",         (0,0), (-1,0), "CENTER"),
+        # Body
         ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
-        ("FONTSIZE",      (0,1), (-1,-1), 9),
+        ("FONTSIZE",      (0,1), (-1,-1), 8),
         ("TEXTCOLOR",     (0,1), (0,-1), GRIS_MED),
-        ("TEXTCOLOR",     (1,1), (2,-1), BLANC),
-        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
-        ("TOPPADDING",    (0,0), (-1,-1), 7),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 7),
-        ("LEFTPADDING",   (0,0), (-1,-1), 10),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
-        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+        ("TEXTCOLOR",     (1,1), (2,-1), NOIR),
+        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLANC, GRIS_BG]),
+        ("TOPPADDING",    (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+        ("LEFTPADDING",   (0,0), (-1,-1), 8),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 8),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_TRES),
         ("ALIGN",         (1,1), (-1,-1), "CENTER"),
     ]
     if not msa_data_df.empty:
@@ -1111,7 +1125,7 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
             msa_style.append(("FONTNAME",  (3,i), (3,i), "Helvetica-Bold"))
     msa_t.setStyle(TableStyle(msa_style))
     story.append(msa_t)
-    story.append(Spacer(1, 0.5*cm))
+    story.append(Spacer(1, 0.4*cm))
 
     # SPC
     story += section_header("4. CONTROLE STATISTIQUE DU PROCESSUS (SPC)")
@@ -1133,21 +1147,23 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
     ]
     spc_t = Table(spc_table_data, colWidths=[6*cm, 6*cm, 5*cm])
     spc_style = [
-        ("BACKGROUND",    (0,0), (-1,0), colors.HexColor("#0369a1")),
+        # Header - BLEU
+        ("BACKGROUND",    (0,0), (-1,0), BLEU),
         ("TEXTCOLOR",     (0,0), (-1,0), BLANC),
         ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE",      (0,0), (-1,0), 10),
+        ("FONTSIZE",      (0,0), (-1,0), 9),
         ("ALIGN",         (0,0), (-1,0), "CENTER"),
+        # Body
         ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
-        ("FONTSIZE",      (0,1), (-1,-1), 9),
+        ("FONTSIZE",      (0,1), (-1,-1), 8),
         ("TEXTCOLOR",     (0,1), (0,-1), GRIS_MED),
-        ("TEXTCOLOR",     (1,1), (1,-1), BLANC),
-        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
-        ("TOPPADDING",    (0,0), (-1,-1), 7),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 7),
-        ("LEFTPADDING",   (0,0), (-1,-1), 10),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
-        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+        ("TEXTCOLOR",     (1,1), (1,-1), NOIR),
+        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLANC, GRIS_BG]),
+        ("TOPPADDING",    (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+        ("LEFTPADDING",   (0,0), (-1,-1), 8),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 8),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_TRES),
         ("ALIGN",         (1,1), (-1,-1), "CENTER"),
     ]
     for i, row in enumerate(spc_table_data[1:], 1):
@@ -1188,21 +1204,23 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
 
     amdec_t = Table(amdec_rows, colWidths=[3.5*cm, 3.2*cm, 1.5*cm, 1.5*cm, 1.5*cm, 2*cm, 3.8*cm])
     amdec_style_list = [
-        ("BACKGROUND",    (0,0), (-1,0), colors.HexColor("#7c3aed")),
+        # Header - GRIS FONCE
+        ("BACKGROUND",    (0,0), (-1,0), GRIS_FONCE),
         ("TEXTCOLOR",     (0,0), (-1,0), BLANC),
         ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE",      (0,0), (-1,0), 9),
+        ("FONTSIZE",      (0,0), (-1,0), 8),
         ("ALIGN",         (0,0), (-1,0), "CENTER"),
+        # Body
         ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
         ("FONTSIZE",      (0,1), (-1,-1), 8),
-        ("TEXTCOLOR",     (0,1), (1,-1), GRIS_MED),
-        ("TEXTCOLOR",     (2,1), (5,-1), BLANC),
-        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
-        ("TOPPADDING",    (0,0), (-1,-1), 6),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 6),
-        ("LEFTPADDING",   (0,0), (-1,-1), 6),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 6),
-        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+        ("TEXTCOLOR",     (0,1), (1,-1), NOIR),
+        ("TEXTCOLOR",     (2,1), (5,-1), NOIR),
+        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLANC, GRIS_BG]),
+        ("TOPPADDING",    (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+        ("LEFTPADDING",   (0,0), (-1,-1), 5),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 5),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_TRES),
         ("ALIGN",         (2,1), (5,-1), "CENTER"),
         ("ALIGN",         (6,1), (6,-1), "CENTER"),
     ]
@@ -1216,7 +1234,7 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
 
     amdec_t.setStyle(TableStyle(amdec_style_list))
     story.append(amdec_t)
-    story.append(Spacer(1, 0.5*cm))
+    story.append(Spacer(1, 0.4*cm))
 
     # Pareto
     story += section_header("6. ANALYSE PARETO DES DEFAUTS")
@@ -1235,28 +1253,30 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
 
         par_t = Table(pareto_rows, colWidths=[6*cm, 3*cm, 4*cm, 4*cm])
         par_t.setStyle(TableStyle([
-            ("BACKGROUND",    (0,0), (-1,0), colors.HexColor("#0369a1")),
+            # Header - BLEU
+            ("BACKGROUND",    (0,0), (-1,0), BLEU),
             ("TEXTCOLOR",     (0,0), (-1,0), BLANC),
             ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
-            ("FONTSIZE",      (0,0), (-1,0), 9),
+            ("FONTSIZE",      (0,0), (-1,0), 8),
             ("ALIGN",         (0,0), (-1,0), "CENTER"),
+            # Body
             ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
-            ("FONTSIZE",      (0,1), (-1,-1), 9),
-            ("TEXTCOLOR",     (0,1), (0,-1), BLANC),
+            ("FONTSIZE",      (0,1), (-1,-1), 8),
+            ("TEXTCOLOR",     (0,1), (0,-1), NOIR),
             ("TEXTCOLOR",     (1,1), (-1,-1), GRIS_MED),
-            ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
-            ("TOPPADDING",    (0,0), (-1,-1), 6),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 6),
-            ("LEFTPADDING",   (0,0), (-1,-1), 10),
-            ("RIGHTPADDING",  (0,0), (-1,-1), 10),
-            ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+            ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLANC, GRIS_BG]),
+            ("TOPPADDING",    (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+            ("LEFTPADDING",   (0,0), (-1,-1), 8),
+            ("RIGHTPADDING",  (0,0), (-1,-1), 8),
+            ("BOX",           (0,0), (-1,-1), 0.5, GRIS_TRES),
             ("ALIGN",         (1,1), (-1,-1), "CENTER"),
         ]))
         story.append(par_t)
     else:
         story.append(Paragraph("✅ Aucun defaut detecte dans les donnees.", ST["body"]))
 
-    story.append(Spacer(1, 0.6*cm))
+    story.append(Spacer(1, 0.5*cm))
 
     # CONCLUSION
     story += section_header("7. CONCLUSION ET RECOMMANDATIONS")
@@ -1288,16 +1308,16 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
     concl_data = [[Paragraph(conclusion_txt, ST["conclusion"])]]
     concl_table = Table(concl_data, colWidths=[17*cm])
     concl_table.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0), (-1,-1), BLEU_MED),
+        ("BACKGROUND",    (0,0), (-1,-1), GRIS_BG),
         ("BOX",           (0,0), (-1,-1), 2, conclusion_color),
-        ("LEFTBORDER",    (0,0), (0,-1), 5, conclusion_color),
-        ("TOPPADDING",    (0,0), (-1,-1), 14),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 14),
-        ("LEFTPADDING",   (0,0), (-1,-1), 16),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 16),
+        ("LEFTBORDER",    (0,0), (0,-1), 4, conclusion_color),
+        ("TOPPADDING",    (0,0), (-1,-1), 10),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+        ("LEFTPADDING",   (0,0), (-1,-1), 12),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 12),
     ]))
     story.append(concl_table)
-    story.append(Spacer(1, 0.6*cm))
+    story.append(Spacer(1, 0.5*cm))
 
     # Signature
     sign_data = [
@@ -1319,13 +1339,13 @@ def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
     ]
     sign_table = Table(sign_data, colWidths=[5.5*cm, 5.5*cm, 5.5*cm])
     sign_table.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0), (-1,-1), BLEU_MED),
-        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
-        ("INNERGRID",     (0,0), (-1,-1), 0.3, colors.HexColor("#1e293b")),
-        ("TOPPADDING",    (0,0), (-1,-1), 10),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
-        ("LEFTPADDING",   (0,0), (-1,-1), 12),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 12),
+        ("BACKGROUND",    (0,0), (-1,-1), BLANC),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_TRES),
+        ("INNERGRID",     (0,0), (-1,-1), 0.3, GRIS_TRES),
+        ("TOPPADDING",    (0,0), (-1,-1), 8),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+        ("LEFTPADDING",   (0,0), (-1,-1), 10),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
         ("VALIGN",        (0,0), (-1,-1), "MIDDLE"),
     ]))
     story.append(sign_table)
