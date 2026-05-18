@@ -39,8 +39,9 @@ MENU_ITEMS = [
     "📉 SPC",
     "🎯 Capabilité",
     "📊 Pareto",
-    "⚠️ AMDEC",
+    "⚠ AMDEC",
     "🤖 IA",
+    "📄 Rapport IATF",  # <-- ZID HADI
 ]
 
 REQUIRED_COLS = [
@@ -1258,7 +1259,7 @@ def main() -> None:
         return
 
     if df.empty and "manual_data" not in st.session_state:
-        st.warning("⚠️ Google Sheet vide — commencez par saisir des données.")
+        st.warning("⚠ Google Sheet vide — commencez par saisir des données.")
         page_saisie_mesures(df)
         return
 
@@ -1297,8 +1298,27 @@ def main() -> None:
     elif page == "IA":
         page_ai(metrics)
 
+    elif page == "Rapport IATF":  # <-- ZID HADI KAMLA
+        st.subheader("📄 Rapport Qualité IATF 16949:2016")
+        st.markdown("Génère un rapport PDF complet avec MSA, SPC, Capabilité et Plan d'actions")
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Cp", f"{metrics['cp']:.2f}")
+        col2.metric("Cpk", f"{metrics['cpk']:.2f}")
+        col3.metric("Nb Mesures", metrics['total'])
+        
+        st.markdown("---")
+        
+        if st.button("📄 Générer Rapport Général IATF", type="primary", use_container_width=True):
+            with st.spinner("Génération du rapport PDF..."):
+                pdf_path = generate_rapport_general_iatf(metrics, df)
+            with open(pdf_path, "rb") as f:
+                st.download_button(
+                    label="⬇ Télécharger Rapport IATF",
+                    data=f,
+                    file_name=f"Rapport_IATF_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+
     render_footer()
-
-
-if __name__ == "__main__":
-    main()
