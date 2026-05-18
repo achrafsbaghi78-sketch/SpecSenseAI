@@ -1881,6 +1881,23 @@ Cp = {metrics['cp']:.2f}
 Cpk = {metrics['cpk']:.2f}
 Nombre de mesures = {metrics['total']}
 """
+        st.markdown("---")
+    st.subheader("📄 Export Rapport IATF")
+    
+    if st.button("📄 Générer Rapport PDF IATF", key="cap_pdf_btn", type="primary"):
+        try:
+            with st.spinner("Génération du PDF..."):
+                pdf_path = generate_rapport_general_iatf(metrics, df)
+            with open(pdf_path, "rb") as f:
+                st.download_button(
+                    "⬇ Télécharger Rapport IATF",
+                    f,
+                    f"Rapport_IATF_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                    "application/pdf",
+                    key="cap_pdf_dl"
+                )
+        except Exception as e:
+            st.error(f"Erreur PDF: {e}")
         show_ai_analysis("Capabilité", context)
 
 
