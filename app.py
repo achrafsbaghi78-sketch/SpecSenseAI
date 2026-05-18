@@ -2012,7 +2012,7 @@ def render_pdf_section(metrics: dict) -> None:
     st.subheader("📄 Rapport Qualité")
 
     if st.button("Générer le rapport PDF", key="generate_pdf_button"):
-        pdf_path = generate_pdf_report(metrics)
+        pdf_path = generate_pdf_report(metrics, df)
 
         with open(pdf_path, "rb") as file:
             st.download_button(
