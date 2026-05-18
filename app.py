@@ -1881,13 +1881,13 @@ Cp = {metrics['cp']:.2f}
 Cpk = {metrics['cpk']:.2f}
 Nombre de mesures = {metrics['total']}
 """
-       st.markdown("---")
+      st.markdown("---")
     st.subheader("📄 Télécharger Rapport Qualité")
     
-    if st.button("📄 Générer Rapport PDF", key="cap_pdf_btn", type="primary"):
+    if st.button("📄 Générer Rapport PDF", key="cap_pdf_btn", type="primary", use_container_width=True):
         try:
             with st.spinner("Génération du PDF..."):
-                pdf_path = generate_pdf_report(metrics, df)  # ← HADI LI BGHIITI
+                pdf_path = generate_pdf_report(metrics, df)
             with open(pdf_path, "rb") as f:
                 st.download_button(
                     "⬇ Télécharger Rapport PDF",
@@ -1902,7 +1902,6 @@ Nombre de mesures = {metrics['total']}
     
     st.markdown("---")
     show_ai_analysis("Capabilité", context)
-
 def page_pareto(df: pd.DataFrame) -> None:
     st.subheader("📊 Analyse Pareto des défauts")
     defects = df[df["Defect_Type"].astype(str).str.upper() != "OK"]
