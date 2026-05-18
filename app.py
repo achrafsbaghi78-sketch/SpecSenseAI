@@ -1881,7 +1881,7 @@ Cp = {metrics['cp']:.2f}
 Cpk = {metrics['cpk']:.2f}
 Nombre de mesures = {metrics['total']}
 """
-      st.markdown("---")
+    st.markdown("---")
     st.subheader("📄 Télécharger Rapport Qualité")
     
     if st.button("📄 Générer Rapport PDF", key="cap_pdf_btn", type="primary", use_container_width=True):
