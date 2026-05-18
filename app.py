@@ -372,38 +372,130 @@ def prepare_data(df: pd.DataFrame) -> dict:
 # =========================
 # PDF
 # =========================
-def generate_pdf_report(metrics: dict) -> str:
+def generate_rapport_general_iatf(metrics: dict, df: pd.DataFrame) -> str:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, Image
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+
     styles = getSampleStyleSheet()
     story = []
 
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=22,
+                                 textColor=colors.HexColor('#0f172a'), alignment=1, spaceAfter=20)
+    h2_style = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=14,
+                              textColor=colors.HexColor('#1e40af'), spaceBefore=12, spaceAfter=6)
+
+    # PAGE 1: GARDE
     if os.path.exists(LOGO_PATH):
-        story.append(Image(LOGO_PATH, width=2 * inch, height=1 * inch))
-
-    story.append(Spacer(1, 12))
-    story.append(Paragraph("Rapport Qualité - SpecSense AI", styles["Title"]))
+        story.append(Image(LOGO_PATH, width=3*inch, height=1.5*inch))
+    story.append(Spacer(1, 40))
+    story.append(Paragraph("RAPPORT QUALITÉ GÉNÉRAL", title_style))
+    story.append(Paragraph("Conforme IATF 16949:2016", styles['Heading3']))
     story.append(Spacer(1, 20))
-    story.append(Paragraph("Indicateurs clés", styles["Heading2"]))
-    story.append(Paragraph(f"Nombre total de mesures : {metrics['total']}", styles["BodyText"]))
-    story.append(Paragraph(f"Moyenne : {metrics['mean_val']:.4f}", styles["BodyText"]))
-    story.append(Paragraph(f"Écart-type : {metrics['std_val']:.6f}", styles["BodyText"]))
-    story.append(Paragraph(f"Cp : {metrics['cp']:.2f}", styles["BodyText"]))
-    story.append(Paragraph(f"Cpk : {metrics['cpk']:.2f}", styles["BodyText"]))
-    story.append(Spacer(1, 12))
-    story.append(Paragraph("Conclusion", styles["Heading2"]))
+    story.append(Paragraph(f"<b>Période:</b> {df['Date_Time'].min() if not df.empty else 'N/A'} → {df['Date_Time'].max() if not df.empty else 'N/A'}", styles['Normal']))
+    story.append(Paragraph(f"<b>Référence:</b> {df['Part_ID'].iloc[0] if not df.empty else 'N/A'}", styles['Normal']))
+    story.append(Paragraph(f"<b>Date génération:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
+    story.append(PageBreak())
 
-    cpk = metrics["cpk"]
-    if cpk < 1:
-        conclusion = "Le processus n'est pas conforme aux exigences qualité. Des actions immédiates sont nécessaires."
-    elif cpk < 1.33:
-        conclusion = "Le processus est limite. Une amélioration est nécessaire."
+    # PAGE 2: SOMMAIRE EXÉCUTIF
+    story.append(Paragraph("1. SOMMAIRE EXÉCUTIF", h2_style))
+    cpk = metrics['cpk']
+    if cpk >= 1.33:
+        statut_proc = "CONFORME - Processus capable"
+        couleur_proc = colors.green
+    elif cpk >= 1.00:
+        statut_proc = "LIMITE - Amélioration requise"
+        couleur_proc = colors.orange
     else:
-        conclusion = "Le processus est globalement maîtrisé."
+        statut_proc = "NON CONFORME - Actions immédiates"
+        couleur_proc = colors.red
 
-    story.append(Paragraph(conclusion, styles["BodyText"]))
-    doc = SimpleDocTemplate(PDF_PATH)
+    synthese_data = [
+        ["Indicateur", "Valeur", "Exigence IATF", "Statut"],
+        ["Nb mesures", f"{metrics['total']}", "≥ 25 pour Cp/Cpk", "OK" if metrics['total']>=25 else "NOK"],
+        ["Moyenne", f"{metrics['mean_val']:.4f}", "—", ""],
+        ["Écart-type σ", f"{metrics['std_val']:.6f}", "Minimise", ""],
+        ["Cp", f"{metrics['cp']:.2f}", "≥ 1.33", "OK" if metrics['cp']>=1.33 else "NOK"],
+        ["Cpk", f"{metrics['cpk']:.2f}", "≥ 1.33 série", "OK" if metrics['cpk']>=1.33 else "NOK"],
+        ["USL / LSL", f"{metrics['usl']:.4f} / {metrics['lsl']:.4f}", "Spécif. client", ""],
+    ]
+
+    t1 = Table(synthese_data, colWidths=[2.2*inch, 1*inch, 1.8*inch, 1*inch])
+    t1.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0f172a')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+    ]))
+    story.append(t1)
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"<b>Conclusion:</b> <font color='{couleur_proc.hexval()}'>{statut_proc}</font>", styles['Normal']))
+    story.append(PageBreak())
+
+    # PAGE 3: MSA
+    story.append(Paragraph("2. VALIDATION MSA - IATF §7.1.5", h2_style))
+    msa_data = metrics['msa_data']
+    if not msa_data.empty:
+        mean_msa = float(msa_data["Measurement"].mean())
+        std_msa = safe_std(msa_data["Measurement"])
+        ref = (metrics['usl'] + metrics['lsl']) / 2
+        tolerance = metrics['usl'] - metrics['lsl']
+        cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
+        cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
+        statut_msa = "ACCEPTABLE" if cgk >= 1.33 else "REFUSÉ"
+        couleur_msa = colors.green if cgk >= 1.33 else colors.red
+
+        msa_table = [
+            ["Critère MSA Type 1", "Valeur", "Exigence", "Statut"],
+            ["Cg - Répétabilité", f"{cg:.2f}", "≥ 1.33", "OK" if cg>=1.33 else "NOK"],
+            ["Cgk - Exactitude", f"{cgk:.2f}", "≥ 1.33", "OK" if cgk>=1.33 else "NOK"],
+            ["Nb mesures MSA", f"{len(msa_data)}", "≥ 25", ""],
+        ]
+        t2 = Table(msa_table, colWidths=[2.2*inch, 1*inch, 1.8*inch, 1*inch])
+        t2.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ]))
+        story.append(t2)
+        story.append(Spacer(1, 10))
+        story.append(Paragraph(f"<b>Verdict MSA:</b> <font color='{couleur_msa.hexval()}'>{statut_msa}</font>", styles['Normal']))
+    else:
+        story.append(Paragraph("⚠ Aucune donnée MSA. Ajouter mesures avec Part_ID='MSA_*'", styles['Normal']))
+    story.append(PageBreak())
+
+    # PAGE 4: ACTIONS
+    story.append(Paragraph("3. PLAN D'ACTIONS", h2_style))
+    if cpk < 1.33:
+        actions = """
+        <b>Actions immédiates:</b><br/>
+        1. Arrêt production + Tri 100%<br/>
+        2. Isolation NC selon IATF §8.7<br/>
+        3. Ouverture 8D<br/><br/>
+        <b>Correctives:</b><br/>
+        1. Analyse causes racines 5M<br/>
+        2. Validation MSA après correction<br/>
+        3. Requalification processus<br/>
+        """
+    else:
+        actions = """
+        <b>Surveillance:</b><br/>
+        1. Maintenir SPC temps réel<br/>
+        2. Revue mensuelle Cp/Cpk<br/>
+        3. Audit MSA trimestriel<br/>
+        """
+    story.append(Paragraph(actions, styles['Normal']))
+    story.append(Spacer(1, 30))
+    story.append(Paragraph(f"Généré par {APP_NAME} {APP_VERSION}", styles['Italic']))
+
+    doc = SimpleDocTemplate(PDF_PATH, pagesize=A4, topMargin=0.5*inch)
     doc.build(story)
     return PDF_PATH
-
 
 # =========================
 # LAYOUT
@@ -1083,18 +1175,19 @@ Donne une réponse structurée en 4 parties:
         else:
             st.success(answer)
 
-def render_pdf_section(metrics: dict) -> None:
+def render_pdf_section(metrics: dict, df: pd.DataFrame) -> None:
     st.markdown("---")
     st.subheader("📄 Rapport Qualité")
 
-    if st.button("Générer le rapport PDF", key="generate_pdf_button"):
-        pdf_path = generate_pdf_report(metrics)
-
+    if st.button("📄 Générer Rapport Général IATF", key="generate_pdf_button", type="primary"):
+        with st.spinner("Génération en cours..."):
+            pdf_path = generate_rapport_general_iatf(metrics, df)
+        
         with open(pdf_path, "rb") as file:
             st.download_button(
-                label="📥 Télécharger le rapport PDF",
+                label="⬇ Télécharger le rapport IATF",
                 data=file,
-                file_name="rapport_qualite_specsense.pdf",
+                file_name=f"Rapport_IATF_{datetime.now().strftime('%Y%m%d')}.pdf",
                 mime="application/pdf",
                 key="download_pdf_button",
             )
