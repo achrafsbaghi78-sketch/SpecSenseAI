@@ -1881,18 +1881,18 @@ Cp = {metrics['cp']:.2f}
 Cpk = {metrics['cpk']:.2f}
 Nombre de mesures = {metrics['total']}
 """
-        st.markdown("---")
-    st.subheader("📄 Export Rapport IATF")
+       st.markdown("---")
+    st.subheader("📄 Télécharger Rapport Qualité")
     
-    if st.button("📄 Générer Rapport PDF IATF", key="cap_pdf_btn", type="primary"):
+    if st.button("📄 Générer Rapport PDF", key="cap_pdf_btn", type="primary"):
         try:
             with st.spinner("Génération du PDF..."):
-                pdf_path = generate_rapport_general_iatf(metrics, df)
+                pdf_path = generate_pdf_report(metrics, df)  # ← HADI LI BGHIITI
             with open(pdf_path, "rb") as f:
                 st.download_button(
-                    "⬇ Télécharger Rapport IATF",
+                    "⬇ Télécharger Rapport PDF",
                     f,
-                    f"Rapport_IATF_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                    f"Rapport_Qualite_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
                     "application/pdf",
                     key="cap_pdf_dl",
                     use_container_width=True
@@ -1901,8 +1901,7 @@ Nombre de mesures = {metrics['total']}
             st.error(f"Erreur PDF: {e}")
     
     st.markdown("---")
-    show_ai_analysis("Capabilité", context)  # ✅ HADI S7I7A
-
+    show_ai_analysis("Capabilité", context)
 
 def page_pareto(df: pd.DataFrame) -> None:
     st.subheader("📊 Analyse Pareto des défauts")
