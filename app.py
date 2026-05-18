@@ -416,7 +416,7 @@ def generate_rapport_general_iatf(metrics: dict, df: pd.DataFrame) -> str:
     # PAGE 2: SOMMAIRE EXÉCUTIF
     story.append(Paragraph("1. SOMMAIRE EXÉCUTIF", h2_style))
     cpk = metrics['cpk']
-   if cpk >= 1.33:
+     if cpk >= 1.33:
         statut_proc = "CONFORME - Processus capable"
         couleur_proc = "green"
     elif cpk >= 1.00:
