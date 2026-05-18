@@ -1894,11 +1894,14 @@ Nombre de mesures = {metrics['total']}
                     f,
                     f"Rapport_IATF_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
                     "application/pdf",
-                    key="cap_pdf_dl"
+                    key="cap_pdf_dl",
+                    use_container_width=True
                 )
         except Exception as e:
             st.error(f"Erreur PDF: {e}")
-        show_ai_analysis("Capabilité", context)
+    
+    st.markdown("---")
+    show_ai_analysis("Capabilité", context)  # ✅ HADI S7I7A
 
 
 def page_pareto(df: pd.DataFrame) -> None:
