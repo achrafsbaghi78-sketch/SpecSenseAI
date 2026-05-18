@@ -332,6 +332,8 @@ def prepare_data(df: pd.DataFrame) -> dict:
             "lsl": 0.0,
             "cp": 0.0,
             "cpk": 0.0,
+            "x_ucl": 0, "x_lcl": 0, "x_out": 0, # <-- ZID HADI
+            "r_ucl": 0, "r_lcl": 0, "r_out": 0, # <-- ZID HADI
         }
 
     msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
@@ -355,6 +357,10 @@ def prepare_data(df: pd.DataFrame) -> dict:
         cp = 0.0
         cpk = 0.0
 
+    # Calcul SPC basique bach ma yb9ach error
+    x_ucl = mean_val + 3 * std_val
+    x_lcl = mean_val - 3 * std_val
+
     return {
         "msa_data": msa_data,
         "spc_data": spc_data,
@@ -367,6 +373,12 @@ def prepare_data(df: pd.DataFrame) -> dict:
         "lsl": lsl,
         "cp": cp,
         "cpk": cpk,
+        "x_ucl": x_ucl, # <-- ZID HADI
+        "x_lcl": x_lcl, # <-- ZID HADI
+        "x_out": 0, # <-- ZID HADI
+        "r_ucl": 0, # <-- ZID HADI
+        "r_lcl": 0, # <-- ZID HADI
+        "r_out": 0 # <-- ZID HADI
     }
 
 
