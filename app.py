@@ -332,8 +332,8 @@ def prepare_data(df: pd.DataFrame) -> dict:
             "lsl": 0.0,
             "cp": 0.0,
             "cpk": 0.0,
-            "x_ucl": 0, "x_lcl": 0, "x_out": 0, # <-- ZID HADI
-            "r_ucl": 0, "r_lcl": 0, "r_out": 0, # <-- ZID HADI
+            "x_ucl": 0, "x_lcl": 0, "x_out": 0,
+            "r_ucl": 0, "r_lcl": 0, "r_out": 0,
         }
 
     msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
@@ -342,10 +342,12 @@ def prepare_data(df: pd.DataFrame) -> dict:
     if spc_data.empty:
         spc_data = df.copy()
 
-    mean_val = float(df["Measurement"].mean())
-    std_val = safe_std(df["Measurement"])
-    usl = float(df["USL"].iloc[0])
-    lsl = float(df["LSL"].iloc[0])
+    # Sécurité: ila ma kayninch USL/LSL
+    usl = float(df["USL"].iloc[0]) if "USL" in df.columns and not df["USL"].empty else 0
+    lsl = float(df["LSL"].iloc[0]) if "LSL" in df.columns and not df["LSL"].empty else 0
+    
+    mean_val = float(df["Measurement"].mean()) if "Measurement" in df.columns else 0.0
+    std_val = safe_std(df["Measurement"]) if "Measurement" in df.columns else 0.0
 
     if std_val > 0:
         cp = (usl - lsl) / (6 * std_val)
@@ -357,7 +359,6 @@ def prepare_data(df: pd.DataFrame) -> dict:
         cp = 0.0
         cpk = 0.0
 
-    # Calcul SPC basique bach ma yb9ach error
     x_ucl = mean_val + 3 * std_val
     x_lcl = mean_val - 3 * std_val
 
@@ -373,12 +374,12 @@ def prepare_data(df: pd.DataFrame) -> dict:
         "lsl": lsl,
         "cp": cp,
         "cpk": cpk,
-        "x_ucl": x_ucl, # <-- ZID HADI
-        "x_lcl": x_lcl, # <-- ZID HADI
-        "x_out": 0, # <-- ZID HADI
-        "r_ucl": 0, # <-- ZID HADI
-        "r_lcl": 0, # <-- ZID HADI
-        "r_out": 0 # <-- ZID HADI
+        "x_ucl": x_ucl,
+        "x_lcl": x_lcl,
+        "x_out": 0,
+        "r_ucl": 0,
+        "r_lcl": 0,
+        "r_out": 0
     }
 
 
@@ -1310,27 +1311,31 @@ def main() -> None:
     elif page == "IA":
         page_ai(metrics)
 
-    elif page == "Rapport IATF":  # <-- ZID HADI KAMLA
+   elif page == "Rapport IATF":
         st.subheader("📄 Rapport Qualité IATF 16949:2016")
         st.markdown("Génère un rapport PDF complet avec MSA, SPC, Capabilité et Plan d'actions")
         
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Cp", f"{metrics['cp']:.2f}")
-        col2.metric("Cpk", f"{metrics['cpk']:.2f}")
-        col3.metric("Nb Mesures", metrics['total'])
-        
-        st.markdown("---")
-        
-        if st.button("📄 Générer Rapport Général IATF", type="primary", use_container_width=True):
-            with st.spinner("Génération du rapport PDF..."):
-                pdf_path = generate_rapport_general_iatf(metrics, df)
-            with open(pdf_path, "rb") as f:
-                st.download_button(
-                    label="⬇ Télécharger Rapport IATF",
-                    data=f,
-                    file_name=f"Rapport_IATF_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
+        try:
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Cp", f"{metrics['cp']:.2f}")
+            col2.metric("Cpk", f"{metrics['cpk']:.2f}")
+            col3.metric("Nb Mesures", metrics['total'])
+            
+            st.markdown("---")
+            
+            if st.button("📄 Générer Rapport Général IATF", type="primary", use_container_width=True):
+                with st.spinner("Génération du rapport PDF..."):
+                    pdf_path = generate_rapport_general_iatf(metrics, df)
+                with open(pdf_path, "rb") as f:
+                    st.download_button(
+                        label="⬇ Télécharger Rapport IATF",
+                        data=f,
+                        file_name=f"Rapport_IATF_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+        except Exception as e:
+            st.error(f"❌ Erreur: {str(e)}")
+            st.write("Détails:", e)
 
     render_footer()
