@@ -39,9 +39,8 @@ MENU_ITEMS = [
     "📉 SPC",
     "🎯 Capabilité",
     "📊 Pareto",
-    "⚠ AMDEC",
+    "⚠️ AMDEC",
     "🤖 IA",
-    "📄 Rapport IATF",  # <-- ZID HADI
 ]
 
 REQUIRED_COLS = [
@@ -178,24 +177,16 @@ def clean_page_name(page: str) -> str:
 # =========================
 def ask_hf_ai(question: str) -> str:
     if "HUGGINGFACE_TOKEN" not in st.secrets:
-        return """⚠ **IA désactivée - Mode démo**
-
-Pour activer l'IA:
-1. Génère un token: https://huggingface.co/settings/tokens > New token > Type `Read`
-2. Streamlit Cloud > Settings > Secrets > Ajoute: `HUGGINGFACE_TOKEN = "hf_..."`
-3. Redéploie l'app"""
+        return "❌ HUGGINGFACE_TOKEN manquant dans Streamlit Secrets."
 
     try:
-        client = InferenceClient(
-            token=st.secrets["HUGGINGFACE_TOKEN"],
-            timeout=30
-        )
+        client = InferenceClient(token=st.secrets["HUGGINGFACE_TOKEN"])
         response = client.chat.completions.create(
             model="Qwen/Qwen2.5-7B-Instruct",
             messages=[
                 {
                     "role": "system",
-                    "content": "Tu es un expert qualité automobile IATF 16949. Réponds en français. Structure obligatoire: 1.INTERPRÉTATION 2.CAUSES 3.ACTIONS IMMÉDIATES 4.ACTIONS CORRECTIVES",
+                    "content": "Tu es un expert qualité automobile. Réponds en français simple, professionnel et avec des actions concrètes.",
                 },
                 {"role": "user", "content": question},
             ],
@@ -204,19 +195,6 @@ Pour activer l'IA:
         )
         return response.choices[0].message.content
     except Exception as exc:
-        err = str(exc)
-        if "401" in err:
-            return """❌ **Token HF invalide ou expiré**
-
-1. Sir https://huggingface.co/settings/tokens
-2. Supprime l'ancien token
-3. `New token` > Type `Read` > Generate
-4. Copy `hf_...` f Streamlit Secrets
-5. Redéploie"""
-        if "429" in err:
-            return "⚠ **Rate limit HF**: Trop de requêtes. Tsnna 1 min w 3awd."
-        if "timeout" in err.lower():
-            return "⚠ **Timeout**: Serveur HF t3ettel. Click 'Analyser' mra khra."
         return f"❌ Erreur IA : {exc}"
 
 
@@ -309,8 +287,6 @@ def save_to_google_sheet(row: dict) -> None:
 
         if response.status_code == 200:
             st.success("✅ Sauvegardé dans Google Sheet")
-            st.cache_data.clear()
-            st.rerun()
         else:
             st.error(f"❌ Erreur Google Sheet: {response.text}")
 
@@ -332,8 +308,6 @@ def prepare_data(df: pd.DataFrame) -> dict:
             "lsl": 0.0,
             "cp": 0.0,
             "cpk": 0.0,
-            "x_ucl": 0, "x_lcl": 0, "x_out": 0,
-            "r_ucl": 0, "r_lcl": 0, "r_out": 0,
         }
 
     msa_data = df[df["Part_ID"].astype(str).str.contains("MSA", case=False, na=False)].copy()
@@ -342,12 +316,10 @@ def prepare_data(df: pd.DataFrame) -> dict:
     if spc_data.empty:
         spc_data = df.copy()
 
-    # Sécurité: ila ma kayninch USL/LSL
-    usl = float(df["USL"].iloc[0]) if "USL" in df.columns and not df["USL"].empty else 0
-    lsl = float(df["LSL"].iloc[0]) if "LSL" in df.columns and not df["LSL"].empty else 0
-    
-    mean_val = float(df["Measurement"].mean()) if "Measurement" in df.columns else 0.0
-    std_val = safe_std(df["Measurement"]) if "Measurement" in df.columns else 0.0
+    mean_val = float(df["Measurement"].mean())
+    std_val = safe_std(df["Measurement"])
+    usl = float(df["USL"].iloc[0])
+    lsl = float(df["LSL"].iloc[0])
 
     if std_val > 0:
         cp = (usl - lsl) / (6 * std_val)
@@ -358,9 +330,6 @@ def prepare_data(df: pd.DataFrame) -> dict:
     else:
         cp = 0.0
         cpk = 0.0
-
-    x_ucl = mean_val + 3 * std_val
-    x_lcl = mean_val - 3 * std_val
 
     return {
         "msa_data": msa_data,
@@ -374,142 +343,44 @@ def prepare_data(df: pd.DataFrame) -> dict:
         "lsl": lsl,
         "cp": cp,
         "cpk": cpk,
-        "x_ucl": x_ucl,
-        "x_lcl": x_lcl,
-        "x_out": 0,
-        "r_ucl": 0,
-        "r_lcl": 0,
-        "r_out": 0
     }
 
 
 # =========================
 # PDF
 # =========================
-def generate_rapport_general_iatf(metrics: dict, df: pd.DataFrame) -> str:
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, Image
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import inch
-
+def generate_pdf_report(metrics: dict) -> str:
     styles = getSampleStyleSheet()
     story = []
 
-    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=22,
-                                 textColor=colors.HexColor('#0f172a'), alignment=1, spaceAfter=20)
-    h2_style = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=14,
-                              textColor=colors.HexColor('#1e40af'), spaceBefore=12, spaceAfter=6)
-
-    # PAGE 1: GARDE
     if os.path.exists(LOGO_PATH):
-        story.append(Image(LOGO_PATH, width=3*inch, height=1.5*inch))
-    story.append(Spacer(1, 40))
-    story.append(Paragraph("RAPPORT QUALITÉ GÉNÉRAL", title_style))
-    story.append(Paragraph("Conforme IATF 16949:2016", styles['Heading3']))
-    story.append(Spacer(1, 20))
-    story.append(Paragraph(f"<b>Période:</b> {df['Date_Time'].min() if not df.empty else 'N/A'} → {df['Date_Time'].max() if not df.empty else 'N/A'}", styles['Normal']))
-    story.append(Paragraph(f"<b>Référence:</b> {df['Part_ID'].iloc[0] if not df.empty else 'N/A'}", styles['Normal']))
-    story.append(Paragraph(f"<b>Date génération:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
-    story.append(PageBreak())
+        story.append(Image(LOGO_PATH, width=2 * inch, height=1 * inch))
 
-   # PAGE 2: SOMMAIRE EXÉCUTIF
-    story.append(Paragraph("1. SOMMAIRE EXÉCUTIF", h2_style))
-    cpk = metrics['cpk']
-    if cpk >= 1.33:  # <-- ALIGNÉ M3A cpk =
-        statut_proc = "CONFORME - Processus capable"
-        couleur_proc = "green"
-    elif cpk >= 1.00:
-        statut_proc = "LIMITE - Amélioration requise"
-        couleur_proc = "orange"
-    else:
-        statut_proc = "NON CONFORME - Actions immédiates"
-        couleur_proc = "red"
-
-    synthese_data = [
-        ["Indicateur", "Valeur", "Exigence IATF", "Statut"],
-        ["Nb mesures", f"{metrics['total']}", "≥ 25 pour Cp/Cpk", "OK" if metrics['total']>=25 else "NOK"],
-        ["Moyenne", f"{metrics['mean_val']:.4f}", "—", ""],
-        ["Écart-type σ", f"{metrics['std_val']:.6f}", "Minimise", ""],
-        ["Cp", f"{metrics['cp']:.2f}", "≥ 1.33", "OK" if metrics['cp']>=1.33 else "NOK"],
-        ["Cpk", f"{metrics['cpk']:.2f}", "≥ 1.33 série", "OK" if metrics['cpk']>=1.33 else "NOK"],
-        ["USL / LSL", f"{metrics['usl']:.4f} / {metrics['lsl']:.4f}", "Spécif. client", ""],
-    ]
-
-    t1 = Table(synthese_data, colWidths=[2.2*inch, 1*inch, 1.8*inch, 1*inch])
-    t1.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0f172a')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-    ]))
-    story.append(t1)
     story.append(Spacer(1, 12))
-    story.append(Paragraph(f"<b>Conclusion:</b> <font color='{couleur_proc}'>{statut_proc}</font>", styles['Normal']))
-    story.append(PageBreak())
+    story.append(Paragraph("Rapport Qualité - SpecSense AI", styles["Title"]))
+    story.append(Spacer(1, 20))
+    story.append(Paragraph("Indicateurs clés", styles["Heading2"]))
+    story.append(Paragraph(f"Nombre total de mesures : {metrics['total']}", styles["BodyText"]))
+    story.append(Paragraph(f"Moyenne : {metrics['mean_val']:.4f}", styles["BodyText"]))
+    story.append(Paragraph(f"Écart-type : {metrics['std_val']:.6f}", styles["BodyText"]))
+    story.append(Paragraph(f"Cp : {metrics['cp']:.2f}", styles["BodyText"]))
+    story.append(Paragraph(f"Cpk : {metrics['cpk']:.2f}", styles["BodyText"]))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph("Conclusion", styles["Heading2"]))
 
-   # PAGE 3: MSA
-    story.append(Paragraph("2. VALIDATION MSA - IATF §7.1.5", h2_style))
-    msa_data = metrics['msa_data']
-    if not msa_data.empty:
-        mean_msa = float(msa_data["Measurement"].mean())
-        std_msa = safe_std(msa_data["Measurement"])
-        ref = (metrics['usl'] + metrics['lsl']) / 2
-        tolerance = metrics['usl'] - metrics['lsl']
-        cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
-        cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
-        statut_msa = "ACCEPTABLE" if cgk >= 1.33 else "REFUSÉ"
-        couleur_msa = "green" if cgk >= 1.33 else "red"  # <-- BEDDEL HADI
-
-        msa_table = [
-            ["Critère MSA Type 1", "Valeur", "Exigence", "Statut"],
-            ["Cg - Répétabilité", f"{cg:.2f}", "≥ 1.33", "OK" if cg>=1.33 else "NOK"],
-            ["Cgk - Exactitude", f"{cgk:.2f}", "≥ 1.33", "OK" if cgk>=1.33 else "NOK"],
-            ["Nb mesures MSA", f"{len(msa_data)}", "≥ 25", ""],
-        ]
-        t2 = Table(msa_table, colWidths=[2.2*inch, 1*inch, 1.8*inch, 1*inch])
-        t2.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ]))
-        story.append(t2)
-        story.append(Spacer(1, 10))
-        story.append(Paragraph(f"<b>Verdict MSA:</b> <font color='{couleur_msa}'>{statut_msa}</font>", styles['Normal']))  # <-- BEDDEL HADI
+    cpk = metrics["cpk"]
+    if cpk < 1:
+        conclusion = "Le processus n'est pas conforme aux exigences qualité. Des actions immédiates sont nécessaires."
+    elif cpk < 1.33:
+        conclusion = "Le processus est limite. Une amélioration est nécessaire."
     else:
-        story.append(Paragraph("⚠ Aucune donnée MSA. Ajouter mesures avec Part_ID='MSA_*'", styles['Normal']))
-    story.append(PageBreak())
+        conclusion = "Le processus est globalement maîtrisé."
 
-    # PAGE 4: ACTIONS
-    story.append(Paragraph("3. PLAN D'ACTIONS", h2_style))
-    if cpk < 1.33:
-        actions = """
-        <b>Actions immédiates:</b><br/>
-        1. Arrêt production + Tri 100%<br/>
-        2. Isolation NC selon IATF §8.7<br/>
-        3. Ouverture 8D<br/><br/>
-        <b>Correctives:</b><br/>
-        1. Analyse causes racines 5M<br/>
-        2. Validation MSA après correction<br/>
-        3. Requalification processus<br/>
-        """
-    else:
-        actions = """
-        <b>Surveillance:</b><br/>
-        1. Maintenir SPC temps réel<br/>
-        2. Revue mensuelle Cp/Cpk<br/>
-        3. Audit MSA trimestriel<br/>
-        """
-    story.append(Paragraph(actions, styles['Normal']))
-    story.append(Spacer(1, 30))
-    story.append(Paragraph(f"Généré par {APP_NAME} {APP_VERSION}", styles['Italic']))
-
-    doc = SimpleDocTemplate(PDF_PATH, pagesize=A4, topMargin=0.5*inch)
+    story.append(Paragraph(conclusion, styles["BodyText"]))
+    doc = SimpleDocTemplate(PDF_PATH)
     doc.build(story)
     return PDF_PATH
+
 
 # =========================
 # LAYOUT
@@ -547,25 +418,23 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
             part_id = st.text_input("Référence / Part ID")
             operator = st.text_input("Opérateur")
 
-        with col2:
+        with col1:
             machine = st.text_input("Machine", value="M1")
             usl = st.number_input("USL", value=12.1000, format="%.4f")
             lsl = st.number_input("LSL", value=11.9000, format="%.4f")
 
-        with col3:
+        with col1:
             mesure_1 = st.number_input("Mesure 1", format="%.4f")
             mesure_2 = st.number_input("Mesure 2", format="%.4f")
             mesure_3 = st.number_input("Mesure 3", format="%.4f")
 
         submitted = st.form_submit_button("Enregistrer")
-
     if submitted:
         part_id_final = f"{data_type}_{part_id}"
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         new_rows = pd.DataFrame([
             {
-                "Date_Time": now_str,
+               "Date_Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "Part_ID": part_id_final,
                 "Operator": operator,
                 "Trial": 1,
@@ -579,7 +448,7 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
                 "Detection": 1,
             },
             {
-                "Date_Time": now_str,
+                "Date_Time": datetime.now(),
                 "Part_ID": part_id_final,
                 "Operator": operator,
                 "Trial": 2,
@@ -593,7 +462,7 @@ def page_saisie_mesures(df: pd.DataFrame) -> pd.DataFrame:
                 "Detection": 1,
             },
             {
-                "Date_Time": now_str,
+                "Date_Time": datetime.now(),
                 "Part_ID": part_id_final,
                 "Operator": operator,
                 "Trial": 3,
@@ -700,48 +569,47 @@ def page_msa(df: pd.DataFrame, metrics: dict) -> None:
 
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
-            return
-
-        mean_msa = float(msa_data["Measurement"].mean())
-        std_msa = safe_std(msa_data["Measurement"])
-        ref = (usl + lsl) / 2
-        tolerance = usl - lsl
-        cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
-        cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
-
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Référence", f"{ref:.4f}")
-        c2.metric("Tolérance", f"{tolerance:.4f}")
-        c3.metric("Cg", f"{cg:.2f}")
-        c4.metric("Cgk", f"{cgk:.2f}")
-
-        if cgk < 1:
-            st.error("❌ Système de mesure NON acceptable (Cgk < 1)")
-        elif cgk < 1.33:
-            st.warning("⚠ Système limite (amélioration recommandée)")
         else:
-            st.success("✅ Système de mesure acceptable")
+            mean_msa = float(msa_data["Measurement"].mean())
+            std_msa = safe_std(msa_data["Measurement"])
+            ref = (usl + lsl) / 2
+            tolerance = usl - lsl
+            cg = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
+            cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
 
-        st.markdown("""
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Référence", f"{ref:.4f}")
+            c2.metric("Tolérance", f"{tolerance:.4f}")
+            c3.metric("Cg", f"{cg:.2f}")
+            c4.metric("Cgk", f"{cgk:.2f}")
+
+            if cgk < 1:
+                st.error("❌ Système de mesure NON acceptable (Cgk < 1)")
+            elif cgk < 1.33:
+                st.warning("⚠️ Système limite (amélioration recommandée)")
+            else:
+                st.success("✅ Système de mesure acceptable")
+
+            st.markdown("""
 **Lecture rapide:**
 - Cg ≥ 1.33 → répétabilité correcte
 - Cgk ≥ 1.33 → système fiable
 - Cgk < 1 → système NON fiable
 """)
 
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=list(range(1, len(msa_data) + 1)),
-                y=msa_data["Measurement"],
-                mode="lines+markers",
-                name="Mesures MSA",
+            fig = go.Figure()
+            fig.add_trace(
+                go.Scatter(
+                    x=list(range(1, len(msa_data) + 1)),
+                    y=msa_data["Measurement"],
+                    mode="lines+markers",
+                    name="Mesures MSA",
+                )
             )
-        )
-        fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
-        fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
-        fig.update_layout(title="Carte MSA Type 1", template="plotly_dark", height=430)
-        plot_chart(fig, "msa_type1_chart")
+            fig.add_hline(y=mean_msa, line_dash="dash", annotation_text="Moyenne")
+            fig.add_hline(y=ref, line_dash="dot", annotation_text="Référence")
+            fig.update_layout(title="Carte MSA Type 1", template="plotly_dark", height=430)
+            plot_chart(fig, "msa_type1_chart")
 
         context = f"""
 Référence = {ref:.4f}
@@ -755,106 +623,102 @@ Nombre de mesures MSA = {len(msa_data)}
         show_ai_analysis("MSA Type 1", context)
 
     with tab_grr:
-        st.markdown("### ⚙ Gage R&R")
+        st.markdown("### ⚙️ Gage R&R")
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
-            return
+        else:
+            df_grr = msa_data.copy()
+            var_total = df_grr["Measurement"].var()
+            var_operator = df_grr.groupby("Operator")["Measurement"].mean().var()
+            var_repeat = df_grr.groupby(["Part_ID", "Operator"])["Measurement"].var().mean()
+            var_total = 0 if pd.isna(var_total) else var_total
+            var_operator = 0 if pd.isna(var_operator) else var_operator
+            var_repeat = 0 if pd.isna(var_repeat) else var_repeat
+            var_grr = var_operator + var_repeat
+            percent_grr = (var_grr / var_total) * 100 if var_total > 0 else 0
 
-        df_grr = msa_data.copy()
-        var_total = df_grr["Measurement"].var()
-        var_operator = df_grr.groupby("Operator")["Measurement"].mean().var()
-        var_repeat = df_grr.groupby(["Part_ID", "Operator"])["Measurement"].var().mean()
-        var_total = 0 if pd.isna(var_total) else var_total
-        var_operator = 0 if pd.isna(var_operator) else var_operator
-        var_repeat = 0 if pd.isna(var_repeat) else var_repeat
-        var_grr = var_operator + var_repeat
-        percent_grr = (var_grr / var_total) * 100 if var_total > 0 else 0
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Variation totale", f"{var_total:.8f}")
+            c2.metric("GRR", f"{var_grr:.8f}")
+            c3.metric("%GRR", f"{percent_grr:.2f}%")
 
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Variation totale", f"{var_total:.8f}")
-        c2.metric("GRR", f"{var_grr:.8f}")
-        c3.metric("%GRR", f"{percent_grr:.2f}%")
+            fig = px.box(df_grr, x="Operator", y="Measurement", color="Operator", title="Variation par opérateur", template="plotly_dark")
+            plot_chart(fig, "msa_grr_box")
 
-        fig = px.box(df_grr, x="Operator", y="Measurement", color="Operator", title="Variation par opérateur", template="plotly_dark")
-        plot_chart(fig, "msa_grr_box")
-
-        context = f"""
+            context = f"""
 Variation totale = {var_total:.8f}
 Variation opérateur = {var_operator:.8f}
 Variation répétabilité = {var_repeat:.8f}
 GRR = {var_grr:.8f}
 %GRR = {percent_grr:.2f}
 """
-        show_ai_analysis("Gage R&R", context)
+            show_ai_analysis("Gage R&R", context)
 
     with tab_bias:
         st.markdown("### 🎯 Bias")
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
-            return
-
-        reference = st.number_input("Valeur de référence", value=12.0000, format="%.4f", key="bias_reference")
-        mean_bias = float(msa_data["Measurement"].mean())
-        bias = mean_bias - reference
-        c1, c2 = st.columns(2)
-        c1.metric("Moyenne mesurée", f"{mean_bias:.6f}")
-        c2.metric("Bias", f"{bias:.6f}")
-        context = f"""
+        else:
+            reference = st.number_input("Valeur de référence", value=12.0000, format="%.4f", key="bias_reference")
+            mean_bias = float(msa_data["Measurement"].mean())
+            bias = mean_bias - reference
+            c1, c2 = st.columns(2)
+            c1.metric("Moyenne mesurée", f"{mean_bias:.6f}")
+            c2.metric("Bias", f"{bias:.6f}")
+            context = f"""
 Référence = {reference:.4f}
 Moyenne mesurée = {mean_bias:.6f}
 Bias = {bias:.6f}
 """
-        show_ai_analysis("Bias", context)
+            show_ai_analysis("Bias", context)
 
     with tab_linearity:
         st.markdown("### 📈 Linearity")
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
-            return
-
-        df_lin = msa_data.copy()
-        df_lin["Reference"] = df_lin.groupby("Part_ID")["Measurement"].transform("mean")
-        df_lin["Bias"] = df_lin["Measurement"] - df_lin["Reference"]
-        fig = px.scatter(df_lin, x="Reference", y="Bias", color="Operator", title="Linearity : Bias vs Référence", template="plotly_dark")
-        plot_chart(fig, "msa_linearity_scatter")
-        bias_var = safe_std(df_lin.groupby("Part_ID")["Bias"].mean())
-        st.metric("Variation du Bias", f"{bias_var:.6f}")
-        context = f"""
+        else:
+            df_lin = msa_data.copy()
+            df_lin["Reference"] = df_lin.groupby("Part_ID")["Measurement"].transform("mean")
+            df_lin["Bias"] = df_lin["Measurement"] - df_lin["Reference"]
+            fig = px.scatter(df_lin, x="Reference", y="Bias", color="Operator", title="Linearity : Bias vs Référence", template="plotly_dark")
+            plot_chart(fig, "msa_linearity_scatter")
+            bias_var = safe_std(df_lin.groupby("Part_ID")["Bias"].mean())
+            st.metric("Variation du Bias", f"{bias_var:.6f}")
+            context = f"""
 Variation du Bias = {bias_var:.6f}
 Nombre de pièces MSA = {df_lin['Part_ID'].nunique()}
 Nombre opérateurs = {df_lin['Operator'].nunique()}
 """
-        show_ai_analysis("Linearity", context)
+            show_ai_analysis("Linearity", context)
 
     with tab_stability:
         st.markdown("### ⏳ Stability")
         if msa_data.empty:
             st.warning("Aucune donnée MSA disponible.")
-            return
-
-        df_stab = msa_data.copy()
-        df_stab["Date_Time"] = pd.to_datetime(df_stab["Date_Time"], errors="coerce")
-        df_stab = df_stab.dropna(subset=["Date_Time"]).sort_values("Date_Time")
-        mean_stab = float(df_stab["Measurement"].mean())
-        std_stab = safe_std(df_stab["Measurement"])
-        ucl_stab = mean_stab + 3 * std_stab
-        lcl_stab = mean_stab - 3 * std_stab
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df_stab["Date_Time"], y=df_stab["Measurement"], mode="lines+markers", name="Mesures"))
-        fig.add_hline(y=mean_stab, line_dash="dash", annotation_text="Moyenne")
-        fig.add_hline(y=ucl_stab, line_dash="dot", annotation_text="UCL")
-        fig.add_hline(y=lcl_stab, line_dash="dot", annotation_text="LCL")
-        fig.update_layout(title="Stability dans le temps", template="plotly_dark", height=430)
-        plot_chart(fig, "msa_stability_chart")
-        out_stab = df_stab[(df_stab["Measurement"] > ucl_stab) | (df_stab["Measurement"] < lcl_stab)]
-        context = f"""
+        else:
+            df_stab = msa_data.copy()
+            df_stab["Date_Time"] = pd.to_datetime(df_stab["Date_Time"], errors="coerce")
+            df_stab = df_stab.dropna(subset=["Date_Time"]).sort_values("Date_Time")
+            mean_stab = float(df_stab["Measurement"].mean())
+            std_stab = safe_std(df_stab["Measurement"])
+            ucl_stab = mean_stab + 3 * std_stab
+            lcl_stab = mean_stab - 3 * std_stab
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=df_stab["Date_Time"], y=df_stab["Measurement"], mode="lines+markers", name="Mesures"))
+            fig.add_hline(y=mean_stab, line_dash="dash", annotation_text="Moyenne")
+            fig.add_hline(y=ucl_stab, line_dash="dot", annotation_text="UCL")
+            fig.add_hline(y=lcl_stab, line_dash="dot", annotation_text="LCL")
+            fig.update_layout(title="Stability dans le temps", template="plotly_dark", height=430)
+            plot_chart(fig, "msa_stability_chart")
+            out_stab = df_stab[(df_stab["Measurement"] > ucl_stab) | (df_stab["Measurement"] < lcl_stab)]
+            context = f"""
 Moyenne stabilité = {mean_stab:.4f}
 Écart-type stabilité = {std_stab:.6f}
 UCL = {ucl_stab:.4f}
 LCL = {lcl_stab:.4f}
 Points instables = {len(out_stab)}
 """
-        show_ai_analysis("Stability", context)
+            show_ai_analysis("Stability", context)
 
     with tab_attribute:
         st.markdown("### ✅ Attribute MSA")
@@ -1151,57 +1015,53 @@ Action actuelle = {top_risk['Action']}
 
 def page_ai(metrics: dict) -> None:
     st.subheader("🤖 Assistant Qualité IA")
-    question = st.text_area("Pose ta question qualité", key="ai_question", placeholder="Ex: Pourquoi Cpk faible? Quelles actions?")
+    question = st.text_area("Pose ta question qualité", key="ai_question")
 
     if st.button("Analyser", key="ai_analyze_button"):
         if not question.strip():
             st.warning("Écris une question")
             return
 
-        prompt = f"""
-Tu es un expert qualité automobile IATF 16949.
+    prompt = f"""
+Tu es un expert qualité automobile.
 
 Données actuelles :
 - Moyenne = {metrics['mean_val']:.4f}
 - Écart-type = {metrics['std_val']:.6f}
 - Cp = {metrics['cp']:.2f}
 - Cpk = {metrics['cpk']:.2f}
-- USL = {metrics['usl']:.4f}
-- LSL = {metrics['lsl']:.4f}
+- USL = {metrics['usl']}
+- LSL = {metrics['lsl']}
 - Nombre de mesures = {metrics['total']}
 
-Question utilisateur :
+Question :
 {question}
 
-Donne une réponse structurée en 4 parties:
-1. INTERPRÉTATION
-2. CAUSES POSSIBLES  
-3. ACTIONS IMMÉDIATES
-4. ACTIONS CORRECTIVES
+Donne :
+1. Interprétation
+2. Causes possibles
+3. Actions immédiates
+4. Actions correctives
 """
 
-        with st.spinner("🤖 Analyse en cours..."):
-            answer = ask_hf_ai(prompt)
+    with st.spinner("🤖 Analyse en cours..."):
+        answer = ask_hf_ai(prompt)
 
-        st.markdown("### 🧠 Réponse IA")
-        if answer.startswith("❌") or answer.startswith("⚠"):
-            st.error(answer)
-        else:
-            st.success(answer)
+    st.markdown("### 🧠 Réponse IA")
+    st.success(answer)
 
-def render_pdf_section(metrics: dict, df: pd.DataFrame) -> None:
+def render_pdf_section(metrics: dict) -> None:
     st.markdown("---")
     st.subheader("📄 Rapport Qualité")
 
-    if st.button("📄 Générer Rapport Général IATF", key="generate_pdf_button", type="primary"):
-        with st.spinner("Génération en cours..."):
-            pdf_path = generate_rapport_general_iatf(metrics, df)
-        
+    if st.button("Générer le rapport PDF", key="generate_pdf_button"):
+        pdf_path = generate_pdf_report(metrics)
+
         with open(pdf_path, "rb") as file:
             st.download_button(
-                label="⬇ Télécharger le rapport IATF",
+                label="📥 Télécharger le rapport PDF",
                 data=file,
-                file_name=f"Rapport_IATF_{datetime.now().strftime('%Y%m%d')}.pdf",
+                file_name="rapport_qualite_specsense.pdf",
                 mime="application/pdf",
                 key="download_pdf_button",
             )
@@ -1272,7 +1132,7 @@ def main() -> None:
         return
 
     if df.empty and "manual_data" not in st.session_state:
-        st.warning("⚠ Google Sheet vide — commencez par saisir des données.")
+        st.warning("⚠️ Google Sheet vide — commencez par saisir des données.")
         page_saisie_mesures(df)
         return
 
@@ -1311,31 +1171,8 @@ def main() -> None:
     elif page == "IA":
         page_ai(metrics)
 
-    elif page == "Rapport IATF":
-        st.subheader("📄 Rapport Qualité IATF 16949:2016")
-        st.markdown("Génère un rapport PDF complet avec MSA, SPC, Capabilité et Plan d'actions")
-        
-        try:
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Cp", f"{metrics['cp']:.2f}")
-            col2.metric("Cpk", f"{metrics['cpk']:.2f}")
-            col3.metric("Nb Mesures", metrics['total'])
-            
-            st.markdown("---")
-            
-            if st.button("📄 Générer Rapport Général IATF", type="primary", use_container_width=True):
-                with st.spinner("Génération du rapport PDF..."):
-                    pdf_path = generate_rapport_general_iatf(metrics, df)
-                with open(pdf_path, "rb") as f:
-                    st.download_button(
-                        label="⬇ Télécharger Rapport IATF",
-                        data=f,
-                        file_name=f"Rapport_IATF_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-        except Exception as e:
-            st.error(f"❌ Erreur: {str(e)}")
-            st.write("Détails:", e)
-
     render_footer()
+
+
+if __name__ == "__main__":
+    main()
