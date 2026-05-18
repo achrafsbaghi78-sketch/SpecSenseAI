@@ -1393,17 +1393,656 @@ def render_pdf_section(metrics: dict) -> None:
     st.markdown("---")
     st.subheader("📄 Rapport Qualité")
 
-    if st.button("Générer le rapport PDF", key="generate_pdf_button"):
-        pdf_path = generate_pdf_report(metrics)
+    def generate_pdf_report(metrics: dict, df: pd.DataFrame) -> str:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+        HRFlowable, PageBreak, Image
+    )
+    from reportlab.pdfgen import canvas
+    from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate
+    import io
 
-        with open(pdf_path, "rb") as file:
-            st.download_button(
-                label="📥 Télécharger le rapport PDF",
-                data=file,
-                file_name="rapport_qualite_specsense.pdf",
-                mime="application/pdf",
-                key="download_pdf_button",
-            )
+    # ─── COULEURS ───────────────────────────────────────────────
+    BLEU_FONCE   = colors.HexColor("#020917")
+    BLEU_MED     = colors.HexColor("#0f172a")
+    BLEU_ACCENT  = colors.HexColor("#0ea5e9")
+    BLEU_LIGHT   = colors.HexColor("#38bdf8")
+    INDIGO       = colors.HexColor("#6366f1")
+    GRIS_TEXTE   = colors.HexColor("#e2e8f0")
+    GRIS_MED     = colors.HexColor("#94a3b8")
+    GRIS_DIM     = colors.HexColor("#475569")
+    VERT         = colors.HexColor("#22c55e")
+    ORANGE       = colors.HexColor("#f59e0b")
+    ROUGE        = colors.HexColor("#ef4444")
+    BLANC        = colors.white
+    NOIR         = colors.HexColor("#020917")
+
+    PAGE_W, PAGE_H = A4
+
+    # ─── HEADER / FOOTER sur chaque page ────────────────────────
+    def header_footer(canvas_obj, doc):
+        canvas_obj.saveState()
+
+        # Header background
+        canvas_obj.setFillColor(BLEU_MED)
+        canvas_obj.rect(0, PAGE_H - 2.2*cm, PAGE_W, 2.2*cm, fill=1, stroke=0)
+
+        # Ligne accent header
+        canvas_obj.setFillColor(BLEU_ACCENT)
+        canvas_obj.rect(0, PAGE_H - 2.2*cm, PAGE_W, 0.12*cm, fill=1, stroke=0)
+
+        # Logo / Nom app
+        canvas_obj.setFillColor(BLANC)
+        canvas_obj.setFont("Helvetica-Bold", 13)
+        canvas_obj.drawString(1.5*cm, PAGE_H - 1.5*cm, "SpecSense AI")
+        canvas_obj.setFillColor(GRIS_MED)
+        canvas_obj.setFont("Helvetica", 9)
+        canvas_obj.drawString(1.5*cm, PAGE_H - 1.9*cm, "Plateforme intelligente de qualite industrielle")
+
+        # Date header droite
+        canvas_obj.setFillColor(GRIS_MED)
+        canvas_obj.setFont("Helvetica", 9)
+        date_str = datetime.now().strftime("%d/%m/%Y  %H:%M")
+        canvas_obj.drawRightString(PAGE_W - 1.5*cm, PAGE_H - 1.5*cm, date_str)
+        canvas_obj.setFillColor(GRIS_DIM)
+        canvas_obj.setFont("Helvetica", 8)
+        canvas_obj.drawRightString(PAGE_W - 1.5*cm, PAGE_H - 1.9*cm, "IATF 16949 | Qualite 4.0")
+
+        # Footer background
+        canvas_obj.setFillColor(BLEU_MED)
+        canvas_obj.rect(0, 0, PAGE_W, 1.2*cm, fill=1, stroke=0)
+
+        # Ligne accent footer
+        canvas_obj.setFillColor(INDIGO)
+        canvas_obj.rect(0, 1.2*cm, PAGE_W, 0.08*cm, fill=1, stroke=0)
+
+        # Texte footer
+        canvas_obj.setFillColor(GRIS_DIM)
+        canvas_obj.setFont("Helvetica", 8)
+        canvas_obj.drawString(1.5*cm, 0.4*cm, "CONFIDENTIEL — Document qualite interne")
+        canvas_obj.drawRightString(PAGE_W - 1.5*cm, 0.4*cm, f"Page {doc.page}")
+
+        canvas_obj.restoreState()
+
+    # ─── STYLES ─────────────────────────────────────────────────
+    def make_styles():
+        s = {}
+
+        s["titre_principal"] = ParagraphStyle(
+            "titre_principal",
+            fontName="Helvetica-Bold",
+            fontSize=26,
+            textColor=BLANC,
+            alignment=TA_CENTER,
+            spaceAfter=6,
+            leading=30,
+        )
+        s["sous_titre"] = ParagraphStyle(
+            "sous_titre",
+            fontName="Helvetica",
+            fontSize=13,
+            textColor=GRIS_MED,
+            alignment=TA_CENTER,
+            spaceAfter=4,
+        )
+        s["section_title"] = ParagraphStyle(
+            "section_title",
+            fontName="Helvetica-Bold",
+            fontSize=14,
+            textColor=BLEU_LIGHT,
+            spaceBefore=14,
+            spaceAfter=8,
+            leading=18,
+        )
+        s["body"] = ParagraphStyle(
+            "body",
+            fontName="Helvetica",
+            fontSize=10,
+            textColor=GRIS_TEXTE,
+            spaceAfter=4,
+            leading=15,
+        )
+        s["body_bold"] = ParagraphStyle(
+            "body_bold",
+            fontName="Helvetica-Bold",
+            fontSize=10,
+            textColor=BLANC,
+            spaceAfter=4,
+            leading=15,
+        )
+        s["small"] = ParagraphStyle(
+            "small",
+            fontName="Helvetica",
+            fontSize=8,
+            textColor=GRIS_DIM,
+            spaceAfter=2,
+        )
+        s["conclusion"] = ParagraphStyle(
+            "conclusion",
+            fontName="Helvetica-Bold",
+            fontSize=11,
+            textColor=BLANC,
+            spaceAfter=6,
+            leading=16,
+        )
+        s["label_centre"] = ParagraphStyle(
+            "label_centre",
+            fontName="Helvetica-Bold",
+            fontSize=9,
+            textColor=GRIS_MED,
+            alignment=TA_CENTER,
+        )
+        s["valeur_centre"] = ParagraphStyle(
+            "valeur_centre",
+            fontName="Helvetica-Bold",
+            fontSize=18,
+            textColor=BLANC,
+            alignment=TA_CENTER,
+            leading=22,
+        )
+        return s
+
+    ST = make_styles()
+
+    # ─── HELPERS ────────────────────────────────────────────────
+    def hr(color=BLEU_ACCENT, thickness=0.5):
+        return HRFlowable(
+            width="100%", thickness=thickness,
+            color=color, spaceAfter=8, spaceBefore=4
+        )
+
+    def section_header(titre):
+        return [
+            Paragraph(titre, ST["section_title"]),
+            hr(),
+        ]
+
+    def kpi_box(label, valeur, couleur=BLEU_LIGHT):
+        data = [
+            [Paragraph(label, ST["label_centre"])],
+            [Paragraph(str(valeur), ST["valeur_centre"])],
+        ]
+        t = Table(data, colWidths=[3.8*cm])
+        t.setStyle(TableStyle([
+            ("BACKGROUND",    (0,0), (-1,-1), BLEU_MED),
+            ("ROUNDEDCORNERS",(0,0), (-1,-1), [8]),
+            ("BOX",           (0,0), (-1,-1), 0.8, couleur),
+            ("TOPPADDING",    (0,0), (-1,-1), 8),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+            ("LEFTPADDING",   (0,0), (-1,-1), 6),
+            ("RIGHTPADDING",  (0,0), (-1,-1), 6),
+        ]))
+        return t
+
+    def statut_color(cpk_val):
+        if cpk_val >= 1.33:
+            return VERT, "CAPABLE"
+        elif cpk_val >= 1.0:
+            return ORANGE, "LIMITE"
+        else:
+            return ROUGE, "NON CAPABLE"
+
+    # ─── DOCUMENT SETUP ─────────────────────────────────────────
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=1.5*cm,
+        rightMargin=1.5*cm,
+        topMargin=2.8*cm,
+        bottomMargin=1.8*cm,
+    )
+
+    story = []
+    cpk   = metrics["cpk"]
+    cp    = metrics["cp"]
+    mean_val = metrics["mean_val"]
+    std_val  = metrics["std_val"]
+    usl   = metrics["usl"]
+    lsl   = metrics["lsl"]
+    total = metrics["total"]
+    couleur_statut, texte_statut = statut_color(cpk)
+
+    # ════════════════════════════════════════════════════════════
+    # PAGE 1 — PAGE DE GARDE
+    # ════════════════════════════════════════════════════════════
+
+    story.append(Spacer(1, 1.5*cm))
+
+    # Bloc titre principal
+    title_data = [[
+        Paragraph("RAPPORT QUALITE", ST["titre_principal"]),
+    ]]
+    title_table = Table(title_data, colWidths=[17*cm])
+    title_table.setStyle(TableStyle([
+        ("BACKGROUND",    (0,0), (-1,-1), BLEU_MED),
+        ("BOX",           (0,0), (-1,-1), 1.5, BLEU_ACCENT),
+        ("TOPPADDING",    (0,0), (-1,-1), 18),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 18),
+        ("LEFTPADDING",   (0,0), (-1,-1), 20),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 20),
+    ]))
+    story.append(title_table)
+    story.append(Spacer(1, 0.3*cm))
+    story.append(Paragraph("Analyse de capabilite processus", ST["sous_titre"]))
+    story.append(Spacer(1, 0.8*cm))
+    story.append(hr(INDIGO, 1.5))
+    story.append(Spacer(1, 0.5*cm))
+
+    # Infos rapport
+    info_data = [
+        ["Date de generation :", datetime.now().strftime("%d %B %Y — %H:%M")],
+        ["Reference document :", f"QR-{datetime.now().strftime('%Y%m%d-%H%M')}"],
+        ["Nombre de mesures :", str(total)],
+        ["Limites :", f"USL = {usl:.4f}   |   LSL = {lsl:.4f}"],
+        ["Tolerance :", f"{(usl - lsl):.4f}"],
+    ]
+    info_table = Table(info_data, colWidths=[5*cm, 12*cm])
+    info_table.setStyle(TableStyle([
+        ("FONTNAME",      (0,0), (0,-1), "Helvetica-Bold"),
+        ("FONTNAME",      (1,0), (1,-1), "Helvetica"),
+        ("FONTSIZE",      (0,0), (-1,-1), 10),
+        ("TEXTCOLOR",     (0,0), (0,-1), GRIS_MED),
+        ("TEXTCOLOR",     (1,0), (1,-1), BLANC),
+        ("ROWBACKGROUNDS",(0,0), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
+        ("TOPPADDING",    (0,0), (-1,-1), 8),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+        ("LEFTPADDING",   (0,0), (-1,-1), 12),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 12),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+        ("LINEBELOW",     (0,0), (-1,-2), 0.3, colors.HexColor("#1e293b")),
+    ]))
+    story.append(info_table)
+    story.append(Spacer(1, 0.8*cm))
+
+    # Statut global — badge grand
+    statut_data = [[
+        Paragraph("STATUT GLOBAL DU PROCESSUS", ST["label_centre"]),
+        Paragraph(f"● {texte_statut}", ParagraphStyle(
+            "statut_badge",
+            fontName="Helvetica-Bold",
+            fontSize=20,
+            textColor=couleur_statut,
+            alignment=TA_CENTER,
+        )),
+    ]]
+    statut_table = Table(statut_data, colWidths=[6*cm, 11*cm])
+    statut_table.setStyle(TableStyle([
+        ("BACKGROUND",    (0,0), (-1,-1), BLEU_MED),
+        ("BOX",           (0,0), (-1,-1), 2, couleur_statut),
+        ("TOPPADDING",    (0,0), (-1,-1), 14),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 14),
+        ("LEFTPADDING",   (0,0), (-1,-1), 16),
+        ("VALIGN",        (0,0), (-1,-1), "MIDDLE"),
+    ]))
+    story.append(statut_table)
+    story.append(PageBreak())
+
+    # ════════════════════════════════════════════════════════════
+    # PAGE 2 — RESUME EXECUTIF + CAPABILITE
+    # ════════════════════════════════════════════════════════════
+
+    story += section_header("1. RESUME EXECUTIF")
+
+    # KPIs en ligne
+    kpis_row = [
+        kpi_box("Cp",         f"{cp:.2f}",       BLEU_ACCENT if cp >= 1.33 else ORANGE if cp >= 1 else ROUGE),
+        kpi_box("Cpk",        f"{cpk:.2f}",       VERT if cpk >= 1.33 else ORANGE if cpk >= 1 else ROUGE),
+        kpi_box("Moyenne",    f"{mean_val:.4f}",  BLEU_LIGHT),
+        kpi_box("Ecart-type", f"{std_val:.5f}",   INDIGO),
+    ]
+    kpi_table = Table([kpis_row], colWidths=[4.0*cm]*4, hAlign="LEFT")
+    kpi_table.setStyle(TableStyle([
+        ("LEFTPADDING",  (0,0), (-1,-1), 3),
+        ("RIGHTPADDING", (0,0), (-1,-1), 3),
+        ("VALIGN",       (0,0), (-1,-1), "TOP"),
+    ]))
+    story.append(kpi_table)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Interpretation automatique
+    story += section_header("2. CAPABILITE PROCESSUS")
+
+    cap_data = [
+        ["Parametre",         "Valeur",              "Seuil requis",  "Statut"],
+        ["Cp",                f"{cp:.4f}",            ">= 1.33",       "OK" if cp >= 1.33 else "NOK"],
+        ["Cpk",               f"{cpk:.4f}",           ">= 1.33",       "OK" if cpk >= 1.33 else "NOK"],
+        ["Moyenne",           f"{mean_val:.4f}",      f"Cible: {(usl+lsl)/2:.4f}", "—"],
+        ["Ecart-type",        f"{std_val:.6f}",       "Minimiser",     "—"],
+        ["USL",               f"{usl:.4f}",           "—",             "—"],
+        ["LSL",               f"{lsl:.4f}",           "—",             "—"],
+        ["Tolerance",         f"{(usl-lsl):.4f}",     "—",             "—"],
+        ["Decalage / Cible",  f"{(mean_val-(usl+lsl)/2):.6f}", "~0",  "OK" if abs(mean_val-(usl+lsl)/2) < 0.01 else "Attention"],
+        ["Nb mesures",        str(total),             ">= 30",         "OK" if total >= 30 else "Insuffisant"],
+    ]
+
+    def statut_cell_color(val):
+        if val == "OK":   return VERT
+        if val == "NOK":  return ROUGE
+        if val == "Attention": return ORANGE
+        return GRIS_MED
+
+    cap_table = Table(cap_data, colWidths=[4.5*cm, 4*cm, 4.5*cm, 4*cm])
+    cap_style = [
+        # Header
+        ("BACKGROUND",    (0,0), (-1,0), BLEU_ACCENT),
+        ("TEXTCOLOR",     (0,0), (-1,0), BLANC),
+        ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE",      (0,0), (-1,0), 10),
+        ("ALIGN",         (0,0), (-1,0), "CENTER"),
+        # Body
+        ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
+        ("FONTSIZE",      (0,1), (-1,-1), 9),
+        ("TEXTCOLOR",     (0,1), (0,-1), GRIS_MED),
+        ("TEXTCOLOR",     (1,1), (2,-1), BLANC),
+        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
+        ("TOPPADDING",    (0,0), (-1,-1), 7),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 7),
+        ("LEFTPADDING",   (0,0), (-1,-1), 10),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+        ("LINEBELOW",     (0,0), (-1,-2), 0.3, colors.HexColor("#1e293b")),
+        ("ALIGN",         (1,1), (-1,-1), "CENTER"),
+    ]
+    # Colorier colonne statut
+    for i, row in enumerate(cap_data[1:], 1):
+        c = statut_cell_color(row[3])
+        cap_style.append(("TEXTCOLOR", (3,i), (3,i), c))
+        cap_style.append(("FONTNAME",  (3,i), (3,i), "Helvetica-Bold"))
+
+    cap_table.setStyle(TableStyle(cap_style))
+    story.append(cap_table)
+    story.append(Spacer(1, 0.5*cm))
+
+    # ════════════════════════════════════════════════════════════
+    # PAGE 3 — MSA + SPC
+    # ════════════════════════════════════════════════════════════
+    story.append(PageBreak())
+
+    # MSA
+    msa_data_df = metrics.get("msa_data", pd.DataFrame())
+    story += section_header("3. SYSTEME DE MESURE (MSA)")
+
+    if not msa_data_df.empty:
+        mean_msa = float(msa_data_df["Measurement"].mean())
+        std_msa  = float(msa_data_df["Measurement"].std()) if len(msa_data_df) > 1 else 0
+        ref      = (usl + lsl) / 2
+        tolerance = usl - lsl
+        cg  = (0.2 * tolerance) / (6 * std_msa) if std_msa > 0 else 0
+        cgk = (0.1 * tolerance - abs(mean_msa - ref)) / (3 * std_msa) if std_msa > 0 else 0
+
+        msa_table_data = [
+            ["Indicateur", "Valeur", "Seuil",   "Statut"],
+            ["Cg",         f"{cg:.2f}",  ">= 1.33", "OK" if cg  >= 1.33 else "NOK"],
+            ["Cgk",        f"{cgk:.2f}", ">= 1.33", "OK" if cgk >= 1.33 else "NOK"],
+            ["Moyenne MSA",f"{mean_msa:.4f}", f"Ref: {ref:.4f}", "—"],
+            ["Ecart-type", f"{std_msa:.6f}", "Minimiser", "—"],
+            ["Nb mesures MSA", str(len(msa_data_df)), ">= 25", "OK" if len(msa_data_df) >= 25 else "Insuffisant"],
+        ]
+    else:
+        msa_table_data = [
+            ["Indicateur", "Valeur", "Seuil", "Statut"],
+            ["Donnees MSA", "Non disponibles", "—", "—"],
+        ]
+
+    msa_t = Table(msa_table_data, colWidths=[4.5*cm, 4*cm, 4.5*cm, 4*cm])
+    msa_style = [
+        ("BACKGROUND",    (0,0), (-1,0), INDIGO),
+        ("TEXTCOLOR",     (0,0), (-1,0), BLANC),
+        ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE",      (0,0), (-1,0), 10),
+        ("ALIGN",         (0,0), (-1,0), "CENTER"),
+        ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
+        ("FONTSIZE",      (0,1), (-1,-1), 9),
+        ("TEXTCOLOR",     (0,1), (0,-1), GRIS_MED),
+        ("TEXTCOLOR",     (1,1), (2,-1), BLANC),
+        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
+        ("TOPPADDING",    (0,0), (-1,-1), 7),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 7),
+        ("LEFTPADDING",   (0,0), (-1,-1), 10),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+        ("ALIGN",         (1,1), (-1,-1), "CENTER"),
+    ]
+    if not msa_data_df.empty:
+        for i, row in enumerate(msa_table_data[1:], 1):
+            c = statut_cell_color(row[3])
+            msa_style.append(("TEXTCOLOR", (3,i), (3,i), c))
+            msa_style.append(("FONTNAME",  (3,i), (3,i), "Helvetica-Bold"))
+    msa_t.setStyle(TableStyle(msa_style))
+    story.append(msa_t)
+    story.append(Spacer(1, 0.5*cm))
+
+    # SPC
+    story += section_header("4. CONTROLE STATISTIQUE DU PROCESSUS (SPC)")
+
+    spc_data_df = metrics.get("spc_data", df)
+    mean_spc = float(spc_data_df["Measurement"].mean())
+    std_spc  = float(spc_data_df["Measurement"].std()) if len(spc_data_df) > 1 else 0
+    ucl_spc  = mean_spc + 3 * std_spc
+    lcl_spc  = mean_spc - 3 * std_spc
+    out_ctrl = len(spc_data_df[(spc_data_df["Measurement"] > ucl_spc) | (spc_data_df["Measurement"] < lcl_spc)])
+
+    spc_table_data = [
+        ["Parametre",           "Valeur",              "Statut"],
+        ["Ligne centrale (CL)", f"{mean_spc:.4f}",     "—"],
+        ["UCL (+3sigma)",       f"{ucl_spc:.4f}",      "—"],
+        ["LCL (-3sigma)",       f"{lcl_spc:.4f}",      "—"],
+        ["Points hors controle",str(out_ctrl),         "OK" if out_ctrl == 0 else "NOK"],
+        ["Nombre points SPC",   str(len(spc_data_df)), "—"],
+    ]
+    spc_t = Table(spc_table_data, colWidths=[6*cm, 6*cm, 5*cm])
+    spc_style = [
+        ("BACKGROUND",    (0,0), (-1,0), colors.HexColor("#0369a1")),
+        ("TEXTCOLOR",     (0,0), (-1,0), BLANC),
+        ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE",      (0,0), (-1,0), 10),
+        ("ALIGN",         (0,0), (-1,0), "CENTER"),
+        ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
+        ("FONTSIZE",      (0,1), (-1,-1), 9),
+        ("TEXTCOLOR",     (0,1), (0,-1), GRIS_MED),
+        ("TEXTCOLOR",     (1,1), (1,-1), BLANC),
+        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
+        ("TOPPADDING",    (0,0), (-1,-1), 7),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 7),
+        ("LEFTPADDING",   (0,0), (-1,-1), 10),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+        ("ALIGN",         (1,1), (-1,-1), "CENTER"),
+    ]
+    for i, row in enumerate(spc_table_data[1:], 1):
+        c = statut_cell_color(row[2])
+        spc_style.append(("TEXTCOLOR", (2,i), (2,i), c))
+        spc_style.append(("FONTNAME",  (2,i), (2,i), "Helvetica-Bold"))
+    spc_t.setStyle(TableStyle(spc_style))
+    story.append(spc_t)
+
+    # ════════════════════════════════════════════════════════════
+    # PAGE 4 — AMDEC + PARETO + CONCLUSION
+    # ════════════════════════════════════════════════════════════
+    story.append(PageBreak())
+
+    # AMDEC
+    story += section_header("5. ANALYSE AMDEC — TOP RISQUES")
+
+    fmea_df = df.copy()
+    fmea_df["RPN"] = fmea_df["Severity"] * fmea_df["Occurrence"] * fmea_df["Detection"]
+    fmea_top = fmea_df.nlargest(8, "RPN")[
+        ["Part_ID","Defect_Type","Severity","Occurrence","Detection","RPN"]
+    ].reset_index(drop=True)
+
+    amdec_header = ["Reference", "Defaut", "G", "O", "D", "RPN", "Statut"]
+    amdec_rows   = [amdec_header]
+    for _, row in fmea_top.iterrows():
+        rpn = int(row["RPN"])
+        st_txt = "CRITIQUE" if rpn >= 150 else "ELEVE" if rpn >= 100 else "MOYEN"
+        amdec_rows.append([
+            str(row["Part_ID"])[:16],
+            str(row["Defect_Type"])[:14],
+            str(int(row["Severity"])),
+            str(int(row["Occurrence"])),
+            str(int(row["Detection"])),
+            str(rpn),
+            st_txt,
+        ])
+
+    amdec_t = Table(amdec_rows, colWidths=[3.5*cm, 3.2*cm, 1.5*cm, 1.5*cm, 1.5*cm, 2*cm, 3.8*cm])
+    amdec_style_list = [
+        ("BACKGROUND",    (0,0), (-1,0), colors.HexColor("#7c3aed")),
+        ("TEXTCOLOR",     (0,0), (-1,0), BLANC),
+        ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE",      (0,0), (-1,0), 9),
+        ("ALIGN",         (0,0), (-1,0), "CENTER"),
+        ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
+        ("FONTSIZE",      (0,1), (-1,-1), 8),
+        ("TEXTCOLOR",     (0,1), (1,-1), GRIS_MED),
+        ("TEXTCOLOR",     (2,1), (5,-1), BLANC),
+        ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
+        ("TOPPADDING",    (0,0), (-1,-1), 6),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+        ("LEFTPADDING",   (0,0), (-1,-1), 6),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 6),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+        ("ALIGN",         (2,1), (5,-1), "CENTER"),
+        ("ALIGN",         (6,1), (6,-1), "CENTER"),
+    ]
+    for i, row in enumerate(amdec_rows[1:], 1):
+        rpn_val = int(row[5])
+        c = ROUGE if rpn_val >= 150 else ORANGE if rpn_val >= 100 else VERT
+        amdec_style_list.append(("TEXTCOLOR", (5,i), (5,i), c))
+        amdec_style_list.append(("FONTNAME",  (5,i), (5,i), "Helvetica-Bold"))
+        amdec_style_list.append(("TEXTCOLOR", (6,i), (6,i), c))
+        amdec_style_list.append(("FONTNAME",  (6,i), (6,i), "Helvetica-Bold"))
+
+    amdec_t.setStyle(TableStyle(amdec_style_list))
+    story.append(amdec_t)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Pareto
+    story += section_header("6. ANALYSE PARETO DES DEFAUTS")
+
+    defects_df = df[df["Defect_Type"].astype(str).str.upper() != "OK"]
+    if not defects_df.empty:
+        pareto_counts = defects_df["Defect_Type"].value_counts()
+        total_def = pareto_counts.sum()
+        pareto_header = ["Type de defaut", "Nombre", "% du total", "Cumul %"]
+        pareto_rows = [pareto_header]
+        cumul = 0
+        for defect, count in pareto_counts.items():
+            pct   = count / total_def * 100
+            cumul += pct
+            pareto_rows.append([str(defect), str(count), f"{pct:.1f}%", f"{cumul:.1f}%"])
+
+        par_t = Table(pareto_rows, colWidths=[6*cm, 3*cm, 4*cm, 4*cm])
+        par_t.setStyle(TableStyle([
+            ("BACKGROUND",    (0,0), (-1,0), colors.HexColor("#0369a1")),
+            ("TEXTCOLOR",     (0,0), (-1,0), BLANC),
+            ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE",      (0,0), (-1,0), 9),
+            ("ALIGN",         (0,0), (-1,0), "CENTER"),
+            ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
+            ("FONTSIZE",      (0,1), (-1,-1), 9),
+            ("TEXTCOLOR",     (0,1), (0,-1), BLANC),
+            ("TEXTCOLOR",     (1,1), (-1,-1), GRIS_MED),
+            ("ROWBACKGROUNDS",(0,1), (-1,-1), [BLEU_MED, colors.HexColor("#0d1a2e")]),
+            ("TOPPADDING",    (0,0), (-1,-1), 6),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+            ("LEFTPADDING",   (0,0), (-1,-1), 10),
+            ("RIGHTPADDING",  (0,0), (-1,-1), 10),
+            ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+            ("ALIGN",         (1,1), (-1,-1), "CENTER"),
+        ]))
+        story.append(par_t)
+    else:
+        story.append(Paragraph("✅ Aucun defaut detecte dans les donnees.", ST["body"]))
+
+    story.append(Spacer(1, 0.6*cm))
+
+    # CONCLUSION
+    story += section_header("7. CONCLUSION ET RECOMMANDATIONS")
+
+    if cpk >= 1.33:
+        conclusion_txt = (
+            f"Le processus est CAPABLE avec un Cpk = {cpk:.2f} (seuil requis : 1.33). "
+            "Le systeme de mesure et le processus de production sont maitrisés. "
+            "Maintenir la surveillance SPC et continuer les audits MSA periodiques."
+        )
+        conclusion_color = VERT
+    elif cpk >= 1.0:
+        conclusion_txt = (
+            f"Le processus est LIMITE avec un Cpk = {cpk:.2f}. "
+            "Une amelioration est necessaire pour atteindre le seuil de 1.33. "
+            "Actions recommandees : recentrage du processus, reduction de la variabilite, "
+            "verification du systeme de mesure (MSA)."
+        )
+        conclusion_color = ORANGE
+    else:
+        conclusion_txt = (
+            f"Le processus est NON CAPABLE avec un Cpk = {cpk:.2f}. "
+            "Des actions correctives immediates sont requises. "
+            "Arreter la production si necessaire, analyser les causes racines (5M), "
+            "mettre en place un plan d'action QRQC et surveiller l'efficacite des actions."
+        )
+        conclusion_color = ROUGE
+
+    concl_data = [[Paragraph(conclusion_txt, ST["conclusion"])]]
+    concl_table = Table(concl_data, colWidths=[17*cm])
+    concl_table.setStyle(TableStyle([
+        ("BACKGROUND",    (0,0), (-1,-1), BLEU_MED),
+        ("BOX",           (0,0), (-1,-1), 2, conclusion_color),
+        ("LEFTBORDER",    (0,0), (0,-1), 5, conclusion_color),
+        ("TOPPADDING",    (0,0), (-1,-1), 14),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 14),
+        ("LEFTPADDING",   (0,0), (-1,-1), 16),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 16),
+    ]))
+    story.append(concl_table)
+    story.append(Spacer(1, 0.6*cm))
+
+    # Signature
+    sign_data = [
+        [
+            Paragraph("Redige par :", ST["small"]),
+            Paragraph("Verifie par :", ST["small"]),
+            Paragraph("Approuve par :", ST["small"]),
+        ],
+        [
+            Paragraph("_______________________", ST["body"]),
+            Paragraph("_______________________", ST["body"]),
+            Paragraph("_______________________", ST["body"]),
+        ],
+        [
+            Paragraph(f"Date : {datetime.now().strftime('%d/%m/%Y')}", ST["small"]),
+            Paragraph("Date : ___/___/______", ST["small"]),
+            Paragraph("Date : ___/___/______", ST["small"]),
+        ],
+    ]
+    sign_table = Table(sign_data, colWidths=[5.5*cm, 5.5*cm, 5.5*cm])
+    sign_table.setStyle(TableStyle([
+        ("BACKGROUND",    (0,0), (-1,-1), BLEU_MED),
+        ("BOX",           (0,0), (-1,-1), 0.5, GRIS_DIM),
+        ("INNERGRID",     (0,0), (-1,-1), 0.3, colors.HexColor("#1e293b")),
+        ("TOPPADDING",    (0,0), (-1,-1), 10),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+        ("LEFTPADDING",   (0,0), (-1,-1), 12),
+        ("RIGHTPADDING",  (0,0), (-1,-1), 12),
+        ("VALIGN",        (0,0), (-1,-1), "MIDDLE"),
+    ]))
+    story.append(sign_table)
+
+    # ─── BUILD ──────────────────────────────────────────────────
+    doc.build(story, onFirstPage=header_footer, onLaterPages=header_footer)
+
+    buffer.seek(0)
+    with open(PDF_PATH, "wb") as f:
+        f.write(buffer.read())
+
+    return PDF_PATH
 def render_footer() -> None:
     st.markdown("---")
     st.caption(
